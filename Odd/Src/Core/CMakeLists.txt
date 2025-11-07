@@ -1,0 +1,2 @@
+add_subdirectory(RootObj)
+add_subdirectory(OddCore)
