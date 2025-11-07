@@ -36,3 +36,13 @@ macro(Odd_CreateExecutable exe_name)
 	target_compile_features(${exe_name} PUBLIC cxx_std_23)
 	target_compile_definitions(${exe_name} PRIVATE ODD_MODULE_${exe_name}=1)
 endmacro()
+
+# This should be run when configuring the project.
+if (NOT EXISTS ${CMAKE_SOURCE_DIR}/Binaries)
+	make_directory(${CMAKE_SOURCE_DIR}/Binaries)
+	file(WRITE ${CMAKE_SOURCE_DIR}/Binaries/.gitignore "*")
+endif()
+
+if (NOT EXISTS ${CMAKE_SOURCE_DIR}/BuildTree/.gitignore)
+	file(WRITE ${CMAKE_SOURCE_DIR}/BuildTree/.gitignore "*")
+endif()
