@@ -1,5 +1,7 @@
 #include "OddMalloc.h"
 #include "Macros.h"
+#include "OddWaysToCrash.h"
+
 #include <cassert>
 #include <cstdlib>
 #include <cstring>
@@ -439,7 +441,7 @@ namespace Odd
         }
 
         // Pop from free list
-        assert(page->FreeList != nullptr);
+        oddAssert(page->FreeList != nullptr);
 
         FreeListNode* node = page->FreeList;
         page->FreeList = node->Next;
@@ -508,7 +510,7 @@ namespace Odd
         }
 
         // Pop from free list
-        assert(page->FreeList != nullptr);
+        oddAssert(page->FreeList != nullptr);
 
         FreeListNode* node = page->FreeList;
         page->FreeList = node->Next;
@@ -792,7 +794,7 @@ namespace Odd
 
     void MemoryPool::DeallocatePage(PageMetadata* pageMeta)
     {
-        assert(pageMeta->AllocationCount == 0);
+        oddAssert(pageMeta->AllocationCount == 0);
 
         // Remove from the active size class list
         if (pageMeta->PrevPage)

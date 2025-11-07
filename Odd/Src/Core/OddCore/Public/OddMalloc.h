@@ -303,4 +303,24 @@ namespace Odd
     // Print statistics from global pool
     void PrintGlobalMemoryStats();
 
+    template <typename T, typename... Args>
+    T* OddNew(Args&&... args)
+    {
+        void* pMemory = OddMalloc(sizeof(T));
+        if (!pMemory)
+        {
+            return nullptr;
+        }
+        return new (pMemory) T(std::forward<Args>(args)...);
+    }
+
+    template <typename T>
+    void OddDelete(T* pObj)
+    {
+        if (pObj)
+        {
+            pObj->~T();
+            OddFree(pObj);
+        }
+    }
 } // namespace Odd

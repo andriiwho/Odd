@@ -1,20 +1,16 @@
 #include "OddCore.h"
-#include "RootObj.h"
+#include "Main/Main.h"
+#include "ObjPtr.h"
 
-class SomeObject : public Odd::RootObj
+int main(int argc, char const* const* const argv)
 {
-public:
-    int32_t X;
-};
-
-int main()
-{
-    bool success = Odd::InitializeMemoryPool();
-    assert(success);
-
-    SomeObject* pObj = Odd::MakeObject<SomeObject>();
-    pObj->X = 15;
-
-	pObj->Release();
-	return 0;
+    using namespace Odd;
+    oddValidate(InitializeMemoryPool());
+    {
+        ObjPtr mainObj{ MakeObject<Main>() };
+        oddValidate(mainObj != nullptr);
+        mainObj->Launch(std::span<const char* const>(argv, argc));
+    }
+    ShutdownMemoryPool();
+    return 0;
 }

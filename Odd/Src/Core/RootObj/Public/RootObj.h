@@ -42,8 +42,6 @@ namespace Odd
 	template<std::derived_from<RootObj> T>
 	inline T* MakeObject()
 	{
-        void* pMemory = OddMalloc(sizeof(T));
-        assert(pMemory != nullptr && "Failed to allocate RootObject");
-        return new (pMemory) T();
+        return OddNew<T>();
 	}
 }

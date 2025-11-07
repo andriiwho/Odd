@@ -33,8 +33,7 @@ namespace Odd
 		if (RootObj* pRootObj = scast(RootObj*, pObj))
 		{
 			// For now just use delete
-            std::destroy_at(pRootObj);
-            OddFree(pObj);
+            OddDelete(pRootObj);
 		}
 	}
 
