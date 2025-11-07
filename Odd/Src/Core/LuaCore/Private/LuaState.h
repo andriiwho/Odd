@@ -12,6 +12,6 @@ namespace Odd
         sol::state& GetState() { return m_LuaState; }
 
     private:
-        sol::state m_LuaState;
+        sol::state m_LuaState{};
     };
 } // namespace Odd

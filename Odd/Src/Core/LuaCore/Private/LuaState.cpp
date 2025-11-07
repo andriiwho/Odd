@@ -18,6 +18,7 @@ namespace Odd
     LuaState::LuaState()
         : m_LuaState{ sol::default_at_panic, LuaAllocate }
     {
+        m_LuaState.open_libraries();
     }
 
     LuaState::~LuaState()
