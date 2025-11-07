@@ -4,6 +4,8 @@
 #include <cstdlib>
 #include <cstring>
 #include <new>
+#include <algorithm>
+#include <cstdio>
 
 namespace Odd
 {
@@ -73,12 +75,19 @@ namespace Odd
         : m_LargeAllocations(nullptr)
         , m_TotalAllocated(0)
         , m_TotalUsed(0)
+        , m_TotalFreed(0)
+        , m_PeakMemoryUsage(0)
         , m_NumPages(0)
         , m_NumLargeAllocations(0)
+        , m_TotalAllocationCount(0)
+        , m_TotalFreeCount(0)
+        , m_LastError(MemoryError::None)
         , m_IsInitialized(false)
     {
         m_SizeClassLists.fill(nullptr);
         m_FreePageLists.fill(nullptr);
+        m_AllocationsByClass.fill(0);
+        m_FreesByClass.fill(0);
     }
 
     MemoryPool::~MemoryPool()
@@ -89,24 +98,36 @@ namespace Odd
         }
     }
 
-    bool MemoryPool::Initialize()
+    bool MemoryPool::Initialize(const MemoryPoolConfig& config)
     {
         if (m_IsInitialized)
         {
+            SetError(MemoryError::AlreadyInitialized, "Memory pool already initialized");
             return false;
         }
+
+        // Store configuration
+        m_Config = config;
 
         // Initialize all lists
         m_SizeClassLists.fill(nullptr);
         m_FreePageLists.fill(nullptr);
         m_LargeAllocations = nullptr;
+        m_LargeAllocationSet.clear();
 
         // Reset statistics
         m_TotalAllocated = 0;
         m_TotalUsed = 0;
+        m_TotalFreed = 0;
+        m_PeakMemoryUsage = 0;
         m_NumPages = 0;
         m_NumLargeAllocations = 0;
+        m_AllocationsByClass.fill(0);
+        m_FreesByClass.fill(0);
+        m_TotalAllocationCount = 0;
+        m_TotalFreeCount = 0;
 
+        m_LastError = MemoryError::None;
         m_IsInitialized = true;
 
         return true;
@@ -117,6 +138,16 @@ namespace Odd
         if (!m_IsInitialized)
         {
             return;
+        }
+
+        // Lock all mutexes if thread safety is enabled
+        if (m_Config.EnableThreadSafety)
+        {
+            for (auto& mutex : m_SizeClassMutexes)
+            {
+                mutex.lock();
+            }
+            m_LargeMutex.lock();
         }
 
         // Free all large allocations
@@ -155,19 +186,46 @@ namespace Odd
         m_SizeClassLists.fill(nullptr);
         m_FreePageLists.fill(nullptr);
         m_LargeAllocations = nullptr;
+        m_LargeAllocationSet.clear();
 
         m_TotalAllocated = 0;
         m_TotalUsed = 0;
+        m_TotalFreed = 0;
+        m_PeakMemoryUsage = 0;
         m_NumPages = 0;
         m_NumLargeAllocations = 0;
 
         m_IsInitialized = false;
+
+        // Unlock all mutexes if thread safety is enabled
+        if (m_Config.EnableThreadSafety)
+        {
+            m_LargeMutex.unlock();
+            for (auto& mutex : m_SizeClassMutexes)
+            {
+                mutex.unlock();
+            }
+        }
     }
 
     void* MemoryPool::Allocate(size_t size)
     {
-        if (!m_IsInitialized || size == 0)
+        if (!m_IsInitialized)
         {
+            SetError(MemoryError::NotInitialized, "Memory pool not initialized");
+            return nullptr;
+        }
+
+        if (size == 0)
+        {
+            SetError(MemoryError::InvalidSize, "Cannot allocate zero bytes");
+            return nullptr;
+        }
+
+        // Check max memory limit
+        if (m_Config.MaxMemoryBytes > 0 && m_TotalAllocated + size > m_Config.MaxMemoryBytes)
+        {
+            SetError(MemoryError::MaxMemoryExceeded, "Max memory limit exceeded");
             return nullptr;
         }
 
@@ -191,7 +249,24 @@ namespace Odd
 
         if (ptr)
         {
-            m_TotalAllocated += size;
+            if (m_Config.EnableThreadSafety)
+            {
+                std::lock_guard<std::mutex> lock(m_StatsMutex);
+                m_TotalAllocated += size;
+                m_TotalAllocationCount++;
+                UpdatePeakMemory();
+            }
+            else
+            {
+                m_TotalAllocated += size;
+                m_TotalAllocationCount++;
+                UpdatePeakMemory();
+            }
+            m_LastError = MemoryError::None;
+        }
+        else
+        {
+            SetError(MemoryError::OutOfMemory, "Allocation failed");
         }
 
         return ptr;
@@ -199,26 +274,49 @@ namespace Odd
 
     void MemoryPool::Free(void* ptr)
     {
-        if (!ptr || !m_IsInitialized)
+        if (!ptr)
         {
             return;
         }
 
-        // Check if this is a large allocation (has magic number)
+        if (!m_IsInitialized)
+        {
+            SetError(MemoryError::NotInitialized, "Memory pool not initialized");
+            return;
+        }
+
+        // Check if this is a large allocation (O(1) lookup now!)
         if (IsLargeAllocation(ptr))
         {
             FreeLarge(ptr);
+            if (m_Config.EnableThreadSafety)
+            {
+                std::lock_guard<std::mutex> lock(m_StatsMutex);
+                m_TotalFreeCount++;
+            }
+            else
+            {
+                m_TotalFreeCount++;
+            }
             return;
         }
 
         // Small or medium allocation - get header
         AllocationHeader* header = rcast(AllocationHeader*, rcast(uint8_t*, ptr) - sizeof(AllocationHeader));
 
-        // Validate magic number in debug builds
-        assert(header->Magic == ALLOCATION_MAGIC && "Corrupted allocation header!");
+        // Validate magic number
+        if (header->Magic != ALLOCATION_MAGIC)
+        {
+            SetError(MemoryError::CorruptedHeader, "Corrupted allocation header");
+            return;
+        }
 
         PageMetadata* pageMeta = header->OwningPage;
-        assert(pageMeta != nullptr && "Invalid page metadata!");
+        if (!pageMeta)
+        {
+            SetError(MemoryError::InvalidPointer, "Invalid page metadata");
+            return;
+        }
 
         size_t sizeClass = pageMeta->SizeClassIndex;
 
@@ -229,6 +327,24 @@ namespace Odd
         else
         {
             FreeMedium(ptr, pageMeta);
+        }
+
+        if (m_Config.EnableThreadSafety)
+        {
+            std::lock_guard<std::mutex> lock(m_StatsMutex);
+            m_TotalFreeCount++;
+            if (sizeClass < NUM_SIZE_CLASSES)
+            {
+                m_FreesByClass[sizeClass]++;
+            }
+        }
+        else
+        {
+            m_TotalFreeCount++;
+            if (sizeClass < NUM_SIZE_CLASSES)
+            {
+                m_FreesByClass[sizeClass]++;
+            }
         }
     }
 
@@ -297,6 +413,13 @@ namespace Odd
         // Get size class index
         uint8_t sizeClass = GetSizeClassIndex(actualSize);
 
+        // Lock this size class if thread safety is enabled
+        std::unique_lock<std::mutex> lock;
+        if (m_Config.EnableThreadSafety)
+        {
+            lock = std::unique_lock<std::mutex>(m_SizeClassMutexes[sizeClass]);
+        }
+
         // Find a page with free space
         PageMetadata* page = m_SizeClassLists[sizeClass];
 
@@ -323,6 +446,12 @@ namespace Odd
         page->AllocationCount++;
 
         m_TotalUsed += actualSize;
+
+        // Update statistics
+        if (m_Config.EnableStatistics)
+        {
+            m_AllocationsByClass[sizeClass]++;
+        }
 
         // Set up allocation header
         AllocationHeader* header = rcast(AllocationHeader*, node);
@@ -353,6 +482,13 @@ namespace Odd
         // Get size class index (offset by NUM_SMALL_SIZE_CLASSES)
         uint8_t sizeClass = GetSizeClassIndex(actualSize);
 
+        // Lock this size class if thread safety is enabled
+        std::unique_lock<std::mutex> lock;
+        if (m_Config.EnableThreadSafety)
+        {
+            lock = std::unique_lock<std::mutex>(m_SizeClassMutexes[sizeClass]);
+        }
+
         // Find a page with free space
         PageMetadata* page = m_SizeClassLists[sizeClass];
 
@@ -380,6 +516,12 @@ namespace Odd
 
         m_TotalUsed += actualSize;
 
+        // Update statistics
+        if (m_Config.EnableStatistics)
+        {
+            m_AllocationsByClass[sizeClass]++;
+        }
+
         // Set up allocation header
         AllocationHeader* header = rcast(AllocationHeader*, node);
         header->OwningPage = page;
@@ -392,6 +534,13 @@ namespace Odd
 
     void* MemoryPool::AllocateLarge(size_t size)
     {
+        // Lock large allocation list if thread safety is enabled
+        std::unique_lock<std::mutex> lock;
+        if (m_Config.EnableThreadSafety)
+        {
+            lock = std::unique_lock<std::mutex>(m_LargeMutex);
+        }
+
         // Allocate directly from OS with header
         size_t totalSize = sizeof(LargeAllocationHeader) + size;
 
@@ -419,12 +568,27 @@ namespace Odd
         m_NumLargeAllocations++;
         m_TotalUsed += size;
 
+        // Get user pointer
+        void* userPtr = rcast(uint8_t*, header) + sizeof(LargeAllocationHeader);
+
+        // Add to fast lookup set (O(1) IsLargeAllocation now!)
+        m_LargeAllocationSet.insert(userPtr);
+
         // Return pointer after header
-        return rcast(uint8_t*, header) + sizeof(LargeAllocationHeader);
+        return userPtr;
     }
 
     void MemoryPool::FreeSmall(void* ptr, PageMetadata* pageMeta)
     {
+        uint8_t sizeClass = pageMeta->SizeClassIndex;
+
+        // Lock this size class if thread safety is enabled
+        std::unique_lock<std::mutex> lock;
+        if (m_Config.EnableThreadSafety)
+        {
+            lock = std::unique_lock<std::mutex>(m_SizeClassMutexes[sizeClass]);
+        }
+
         // Get back to the allocation header
         void* allocation = rcast(uint8_t*, ptr) - sizeof(AllocationHeader);
 
@@ -437,11 +601,11 @@ namespace Odd
 
         size_t chunkSize = GetSizeForClass(pageMeta->SizeClassIndex);
         m_TotalUsed -= chunkSize;
+        m_TotalFreed += chunkSize;
 
         // If page is empty and not the first page in the list, deallocate it
         if (pageMeta->AllocationCount == 0)
         {
-            uint8_t       sizeClass = pageMeta->SizeClassIndex;
             PageMetadata* firstPage = m_SizeClassLists[sizeClass];
 
             if (pageMeta != firstPage)
@@ -453,6 +617,15 @@ namespace Odd
 
     void MemoryPool::FreeMedium(void* ptr, PageMetadata* pageMeta)
     {
+        uint8_t sizeClass = pageMeta->SizeClassIndex;
+
+        // Lock this size class if thread safety is enabled
+        std::unique_lock<std::mutex> lock;
+        if (m_Config.EnableThreadSafety)
+        {
+            lock = std::unique_lock<std::mutex>(m_SizeClassMutexes[sizeClass]);
+        }
+
         // Get back to the allocation header
         void* allocation = rcast(uint8_t*, ptr) - sizeof(AllocationHeader);
 
@@ -465,11 +638,11 @@ namespace Odd
 
         size_t chunkSize = GetSizeForClass(pageMeta->SizeClassIndex);
         m_TotalUsed -= chunkSize;
+        m_TotalFreed += chunkSize;
 
         // If page is empty and not the first page in the list, deallocate it
         if (pageMeta->AllocationCount == 0)
         {
-            uint8_t       sizeClass = pageMeta->SizeClassIndex;
             PageMetadata* firstPage = m_SizeClassLists[sizeClass];
 
             if (pageMeta != firstPage)
@@ -481,11 +654,25 @@ namespace Odd
 
     void MemoryPool::FreeLarge(void* ptr)
     {
+        // Lock large allocation list if thread safety is enabled
+        std::unique_lock<std::mutex> lock;
+        if (m_Config.EnableThreadSafety)
+        {
+            lock = std::unique_lock<std::mutex>(m_LargeMutex);
+        }
+
+        // Remove from fast lookup set
+        m_LargeAllocationSet.erase(ptr);
+
         // Get header
         LargeAllocationHeader* header = rcast(LargeAllocationHeader*, rcast(uint8_t*, ptr) - sizeof(LargeAllocationHeader));
 
         // Validate magic
-        assert(header->Magic == LARGE_ALLOC_MAGIC && "Invalid large allocation!");
+        if (header->Magic != LARGE_ALLOC_MAGIC)
+        {
+            SetError(MemoryError::CorruptedHeader, "Invalid large allocation");
+            return;
+        }
 
         // Remove from list
         if (header->Prev)
@@ -503,6 +690,7 @@ namespace Odd
         }
 
         m_TotalUsed -= header->Size;
+        m_TotalFreed += header->Size;
         m_NumLargeAllocations--;
 
         // Free the OS allocation
@@ -524,7 +712,7 @@ namespace Odd
         {
             // No free page available, allocate new from OS
             size_t chunkSize = GetSizeForClass(sizeClassIndex);
-            size_t pageSize = (sizeClassIndex < NUM_SMALL_SIZE_CLASSES) ? SMALL_PAGE_SIZE : MEDIUM_PAGE_SIZE;
+            size_t pageSize = (sizeClassIndex < NUM_SMALL_SIZE_CLASSES) ? m_Config.SmallPageSize : m_Config.MediumPageSize;
 
             // Account for allocation headers in each chunk
             size_t effectiveChunkSize = chunkSize + sizeof(AllocationHeader);
@@ -709,44 +897,174 @@ namespace Odd
 
     bool MemoryPool::IsLargeAllocation(void* ptr) const
     {
-        // Check if pointer has large allocation magic number
-        // We need to be careful here - read the potential header
-        LargeAllocationHeader* potentialHeader = rcast(LargeAllocationHeader*, rcast(uint8_t*, ptr) - sizeof(LargeAllocationHeader));
-
-        // Check if it's in our large allocation list
-        LargeAllocationHeader* large = m_LargeAllocations;
-        while (large)
+        // Fast O(1) lookup using hash set!
+        if (m_Config.EnableThreadSafety)
         {
-            if (large == potentialHeader)
+            // Need const_cast because unordered_set doesn't have const find in some implementations
+            // but logically this is const
+            return const_cast<MemoryPool*>(this)->m_LargeAllocationSet.count(ptr) > 0;
+        }
+        else
+        {
+            return m_LargeAllocationSet.count(ptr) > 0;
+        }
+    }
+
+    void MemoryPool::SetError(MemoryError error, const char* message)
+    {
+        m_LastError = error;
+        if (m_Config.ErrorCallback && message)
+        {
+            m_Config.ErrorCallback(message);
+        }
+    }
+
+    void MemoryPool::UpdatePeakMemory()
+    {
+        if (m_TotalUsed > m_PeakMemoryUsage)
+        {
+            m_PeakMemoryUsage = m_TotalUsed;
+        }
+    }
+
+    void MemoryPool::UpdateFragmentation()
+    {
+        // Simple fragmentation metric: ratio of wasted space to total allocated
+        // Not implemented yet - would require tracking free space per page
+    }
+
+    const char* MemoryPool::GetErrorString(MemoryError error) const
+    {
+        switch (error)
+        {
+            case MemoryError::None:
+                return "No error";
+            case MemoryError::OutOfMemory:
+                return "Out of memory";
+            case MemoryError::InvalidPointer:
+                return "Invalid pointer";
+            case MemoryError::InvalidSize:
+                return "Invalid size";
+            case MemoryError::MaxMemoryExceeded:
+                return "Maximum memory limit exceeded";
+            case MemoryError::NotInitialized:
+                return "Memory pool not initialized";
+            case MemoryError::AlreadyInitialized:
+                return "Memory pool already initialized";
+            case MemoryError::CorruptedHeader:
+                return "Corrupted allocation header";
+            case MemoryError::DoubleFree:
+                return "Double free detected";
+            default:
+                return "Unknown error";
+        }
+    }
+
+    MemoryPoolStats MemoryPool::GetStats() const
+    {
+        MemoryPoolStats stats = {};
+
+        if (m_Config.EnableThreadSafety)
+        {
+            std::lock_guard<std::mutex> lock(const_cast<std::mutex&>(m_StatsMutex));
+
+            stats.TotalAllocated = m_TotalAllocated;
+            stats.TotalUsed = m_TotalUsed;
+            stats.TotalFreed = m_TotalFreed;
+            stats.PeakMemoryUsage = m_PeakMemoryUsage;
+            stats.NumPages = m_NumPages;
+            stats.NumLargeAllocations = m_NumLargeAllocations;
+            stats.TotalAllocationCount = m_TotalAllocationCount;
+            stats.TotalFreeCount = m_TotalFreeCount;
+
+            // Copy per-class stats
+            for (size_t i = 0; i < NUM_SIZE_CLASSES; i++)
             {
-                return true;
+                stats.AllocationsByClass[i] = m_AllocationsByClass[i];
+                stats.FreesByClass[i] = m_FreesByClass[i];
+                stats.ActiveAllocsByClass[i] = m_AllocationsByClass[i] - m_FreesByClass[i];
             }
-            large = large->Next;
+        }
+        else
+        {
+            stats.TotalAllocated = m_TotalAllocated;
+            stats.TotalUsed = m_TotalUsed;
+            stats.TotalFreed = m_TotalFreed;
+            stats.PeakMemoryUsage = m_PeakMemoryUsage;
+            stats.NumPages = m_NumPages;
+            stats.NumLargeAllocations = m_NumLargeAllocations;
+            stats.TotalAllocationCount = m_TotalAllocationCount;
+            stats.TotalFreeCount = m_TotalFreeCount;
+
+            // Copy per-class stats
+            for (size_t i = 0; i < NUM_SIZE_CLASSES; i++)
+            {
+                stats.AllocationsByClass[i] = m_AllocationsByClass[i];
+                stats.FreesByClass[i] = m_FreesByClass[i];
+                stats.ActiveAllocsByClass[i] = m_AllocationsByClass[i] - m_FreesByClass[i];
+            }
         }
 
-        return false;
+        // Count free pages
+        stats.NumFreePages = 0;
+        for (size_t i = 0; i < NUM_SIZE_CLASSES; i++)
+        {
+            PageMetadata* page = m_FreePageLists[i];
+            while (page)
+            {
+                stats.NumFreePages++;
+                page = page->NextFreePage;
+            }
+        }
+
+        // Calculate fragmentation (simple metric)
+        if (stats.TotalAllocated > 0)
+        {
+            stats.FragmentationRatio = 1.0f - (scast(float, stats.TotalUsed) / scast(float, stats.TotalAllocated));
+        }
+        else
+        {
+            stats.FragmentationRatio = 0.0f;
+        }
+
+        return stats;
     }
 
     void MemoryPool::PrintStats() const
     {
-        // This would normally print to a log, but for now we'll just use comments
-        // In a real implementation, you'd use your logging system
+        MemoryPoolStats stats = GetStats();
 
-        /*
-printf("=== Memory Pool Statistics ===\n");
-        printf("Total Allocated:   %zu bytes\n", m_TotalAllocated);
-        printf("Total Used:        %zu bytes\n", m_TotalUsed);
-        printf("Number of Pages:   %zu\n", m_NumPages);
-    printf("Large Allocations: %zu\n", m_NumLargeAllocations);
+        printf("=== Memory Pool Statistics ===\n");
+        printf("Total Allocated:   %zu bytes (%.2f MB)\n", stats.TotalAllocated, stats.TotalAllocated / 1024.0 / 1024.0);
+        printf("Total Used:        %zu bytes (%.2f MB)\n", stats.TotalUsed, stats.TotalUsed / 1024.0 / 1024.0);
+        printf("Total Freed:       %zu bytes (%.2f MB)\n", stats.TotalFreed, stats.TotalFreed / 1024.0 / 1024.0);
+        printf("Peak Memory Usage: %zu bytes (%.2f MB)\n", stats.PeakMemoryUsage, stats.PeakMemoryUsage / 1024.0 / 1024.0);
+        printf("Active Pages:      %zu\n", stats.NumPages);
+        printf("Free Pages:        %zu\n", stats.NumFreePages);
+        printf("Large Allocations: %zu\n", stats.NumLargeAllocations);
+        printf("Total Alloc Count: %zu\n", stats.TotalAllocationCount);
+        printf("Total Free Count:  %zu\n", stats.TotalFreeCount);
+        printf("Fragmentation:     %.2f%%\n", stats.FragmentationRatio * 100.0f);
+        printf("\n");
+
+        printf("Per-Size-Class Statistics:\n");
+        printf("Size Class | Allocations | Frees | Active\n");
+        printf("-----------|-------------|-------|-------\n");
+
+        for (size_t i = 0; i < NUM_SIZE_CLASSES; i++)
+        {
+            size_t sizeClass = GetSizeForClass(scast(uint8_t, i));
+            printf("%10zu | %11zu | %5zu | %6zu\n", sizeClass, stats.AllocationsByClass[i], stats.FreesByClass[i], stats.ActiveAllocsByClass[i]);
+        }
+
         printf("==============================\n");
-      */
     }
 
     // ============================================================================
     // Global Memory Pool Functions
     // ============================================================================
 
-    bool InitializeMemoryPool()
+    bool InitializeMemoryPool(const MemoryPoolConfig& config)
     {
         if (GGlobalMemoryPool)
         {
@@ -759,7 +1077,7 @@ printf("=== Memory Pool Statistics ===\n");
             return false;
         }
 
-        if (!GGlobalMemoryPool->Initialize())
+        if (!GGlobalMemoryPool->Initialize(config))
         {
             delete GGlobalMemoryPool;
             GGlobalMemoryPool = nullptr;
@@ -812,6 +1130,24 @@ printf("=== Memory Pool Statistics ===\n");
     MemoryPool* GetGlobalMemoryPool()
     {
         return GGlobalMemoryPool;
+    }
+
+    MemoryPoolStats GetGlobalMemoryStats()
+    {
+        if (!GGlobalMemoryPool)
+        {
+            return MemoryPoolStats{};
+        }
+
+        return GGlobalMemoryPool->GetStats();
+    }
+
+    void PrintGlobalMemoryStats()
+    {
+        if (GGlobalMemoryPool)
+        {
+            GGlobalMemoryPool->PrintStats();
+        }
     }
 
 } // namespace Odd

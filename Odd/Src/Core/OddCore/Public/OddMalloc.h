@@ -4,6 +4,8 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <mutex>
+#include <unordered_set>
 
 namespace Odd
 {
@@ -33,6 +35,79 @@ namespace Odd
 
     // Alignment
     constexpr size_t ALLOCATION_ALIGNMENT = 16;
+
+    // ============================================================================
+    // Configuration Structures
+    // ============================================================================
+
+    // Memory pool configuration
+    struct MemoryPoolConfig
+    {
+        // Page sizes (can be customized)
+        size_t SmallPageSize = SMALL_PAGE_SIZE;
+        size_t MediumPageSize = MEDIUM_PAGE_SIZE;
+
+        // Maximum memory limit (0 = unlimited)
+        size_t MaxMemoryBytes = 0;
+
+        // Error callback (called on allocation failures)
+        void (*ErrorCallback)(const char* message) = nullptr;
+
+        // Enable/disable features
+        bool EnableStatistics = true;
+        bool EnableThreadSafety = true;
+
+        // Default configuration
+        static MemoryPoolConfig Default()
+        {
+            return MemoryPoolConfig{};
+        }
+    };
+
+    // ============================================================================
+    // Error Codes
+    // ============================================================================
+
+    enum class MemoryError
+    {
+        None = 0,
+        OutOfMemory,
+        InvalidPointer,
+        InvalidSize,
+        MaxMemoryExceeded,
+        NotInitialized,
+        AlreadyInitialized,
+        CorruptedHeader,
+        DoubleFree
+    };
+
+    // ============================================================================
+    // Statistics Structure
+    // ============================================================================
+
+    struct MemoryPoolStats
+    {
+        // Overall statistics
+        size_t TotalAllocated;      // Total bytes allocated from OS
+        size_t TotalUsed;           // Total bytes in use by user
+        size_t TotalFreed;          // Total bytes freed (cumulative)
+        size_t PeakMemoryUsage;     // Highest memory usage achieved
+        size_t NumPages;            // Active pages
+        size_t NumFreePages;        // Pages in free lists
+        size_t NumLargeAllocations; // Active large allocations
+
+        // Per-size-class statistics
+        size_t AllocationsByClass[NUM_SIZE_CLASSES];
+        size_t FreesByClass[NUM_SIZE_CLASSES];
+        size_t ActiveAllocsByClass[NUM_SIZE_CLASSES];
+
+        // Frequency counters
+        size_t TotalAllocationCount;
+        size_t TotalFreeCount;
+
+        // Fragmentation metric (0.0 = no fragmentation, 1.0 = high fragmentation)
+        float FragmentationRatio;
+    };
 
     // ============================================================================
     // Forward Declarations
@@ -108,8 +183,8 @@ namespace Odd
         MemoryPool();
         ~MemoryPool();
 
-        // Initialize the pool
-        bool Initialize();
+        // Initialize the pool with optional configuration
+        bool Initialize(const MemoryPoolConfig& config = MemoryPoolConfig::Default());
 
         // Shutdown and free all memory
         void Shutdown();
@@ -125,8 +200,16 @@ namespace Odd
         size_t GetNumPages() const { return m_NumPages; }
         size_t GetNumLargeAllocations() const { return m_NumLargeAllocations; }
 
-        // Debug functions
-        void PrintStats() const;
+        // Statistics functions
+        MemoryPoolStats GetStats() const;
+        void            PrintStats() const;
+
+        // Error handling
+        MemoryError GetLastError() const { return m_LastError; }
+        const char* GetErrorString(MemoryError error) const;
+
+        // Configuration
+        const MemoryPoolConfig& GetConfig() const { return m_Config; }
 
     private:
         // Internal allocation functions for different size categories
@@ -150,6 +233,13 @@ namespace Odd
         size_t  GetSizeForClass(uint8_t sizeClassIndex) const;
         bool    IsLargeAllocation(void* ptr) const;
 
+        // Error handling
+        void SetError(MemoryError error, const char* message = nullptr);
+
+        // Statistics helpers
+        void UpdatePeakMemory();
+        void UpdateFragmentation();
+
         // Active page lists for each size class
         std::array<PageMetadata*, NUM_SIZE_CLASSES> m_SizeClassLists;
 
@@ -159,11 +249,31 @@ namespace Odd
         // Large allocations (allocated directly from OS)
         LargeAllocationHeader* m_LargeAllocations;
 
+        // Fast lookup for large allocations (O(1) instead of O(n))
+        std::unordered_set<void*> m_LargeAllocationSet;
+
+        // Thread safety - mutexes for each size class (fine-grained locking)
+        std::array<std::mutex, NUM_SIZE_CLASSES> m_SizeClassMutexes;
+        std::mutex                               m_LargeMutex;
+        std::mutex                               m_StatsMutex;
+
         // Statistics
-        size_t m_TotalAllocated;
-        size_t m_TotalUsed;
-        size_t m_NumPages;
-        size_t m_NumLargeAllocations;
+        size_t                               m_TotalAllocated;
+        size_t                               m_TotalUsed;
+        size_t                               m_TotalFreed;
+        size_t                               m_PeakMemoryUsage;
+        size_t                               m_NumPages;
+        size_t                               m_NumLargeAllocations;
+        std::array<size_t, NUM_SIZE_CLASSES> m_AllocationsByClass;
+        std::array<size_t, NUM_SIZE_CLASSES> m_FreesByClass;
+        size_t                               m_TotalAllocationCount;
+        size_t                               m_TotalFreeCount;
+
+        // Configuration
+        MemoryPoolConfig m_Config;
+
+        // Error tracking
+        MemoryError m_LastError;
 
         // Initialization flag
         bool m_IsInitialized;
@@ -173,8 +283,8 @@ namespace Odd
     // Global Memory Pool Functions
     // ============================================================================
 
-    // Initialize the global memory pool
-    bool InitializeMemoryPool();
+    // Initialize the global memory pool with optional configuration
+    bool InitializeMemoryPool(const MemoryPoolConfig& config = MemoryPoolConfig::Default());
 
     // Shutdown the global memory pool
     void ShutdownMemoryPool();
@@ -186,5 +296,11 @@ namespace Odd
 
     // Get the global memory pool instance
     MemoryPool* GetGlobalMemoryPool();
+
+    // Get statistics from global pool
+    MemoryPoolStats GetGlobalMemoryStats();
+
+    // Print statistics from global pool
+    void PrintGlobalMemoryStats();
 
 } // namespace Odd
