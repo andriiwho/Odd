@@ -31,6 +31,12 @@ namespace Odd
         size_t Release() const;
         void   ForceExpire() const;
         size_t GetRefCount() const;
+
+        /**
+         * Check if the object is expired (i.e., ref count is zero).
+         * This is a lightweight check and does not guarantee that the object is still valid.
+         * It's also unsafe to call after flushing the expired root objects.
+         */
         bool   Expired() const;
 
         inline Internal::RootObjectID GetRootObjectID() const { return m_RootObjectID; }

@@ -30,11 +30,6 @@ namespace Odd::Windows
             DispatchMessageA(&msg);
         }
     }
-
-    void WindowsPlatform::OnWindowClosed_Internal(class WindowsWindow* pWindow)
-    {
-    }
-
 } // namespace Odd::Windows
 
 namespace Odd::Internal
@@ -44,11 +39,10 @@ namespace Odd::Internal
     {
         return OddNew<WindowsPlatform>();
     }
+
     void ShutdownPlatform_Internal(IPlatform* platform)
     {
         if (platform)
-        {
             OddDelete(platform);
-        }
     }
 } // namespace Odd::Internal

@@ -51,9 +51,20 @@ namespace Odd
         while (true)
         {
             GPlatform->PollEventsSimple();
+            // This is safe to call here, because window is not immediately deleted on close.
+            // But e.g. next frame it would be really gone.
+            // Because the memory is reclaimed only when we flush expired root objects.
             if (mainWindow->Expired())
                 break;
 
+            // Collect "garbage" every frame. In a real application this would be done less frequently.
+            // But technically this isn't garbage collection, just cleaning up expired root objects.
+            // And since they use internal allocator, which doesn't return memory to the OS immediately,
+            // this is a lightweight operation.
+            // So we can afford to do this every frame.
+            // So yeah, flush expired root objects every frame.
+            // Just call the function.
+            // Here we go:
             Internal::FlushExpiredRootObjects();
         }
     }

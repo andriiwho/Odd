@@ -34,14 +34,6 @@ namespace Odd::Windows
                 pWindow->OnCloseMessage_Internal();
                 return 0;
             }
-            case WM_DESTROY:
-            {
-                WindowsWindow* pWindow = GetWindowFromHWND(hWnd);
-                oddValidateMsg(pWindow != nullptr, "WM_DESTROY received with null WindowsWindow pointer.");
-
-                // Figure out what to do on destroy.
-                return 0;
-            }
             default:
                 return ::DefWindowProc(hWnd, uMsg, wParam, lParam);
         }

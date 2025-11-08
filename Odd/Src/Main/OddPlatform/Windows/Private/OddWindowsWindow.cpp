@@ -157,8 +157,6 @@ namespace Odd::Windows
 
     void WindowsWindow::OnCloseMessage_Internal()
     {
-        scast(WindowsPlatform*, GPlatform)->OnWindowClosed_Internal(this);
-
         // This will mark the object as expired.
         ForceExpire();
     }

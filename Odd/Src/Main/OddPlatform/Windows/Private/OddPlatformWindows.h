@@ -14,8 +14,6 @@ namespace Odd::Windows
         IWindow* CreatePlatformWindow(const String& title, const WindowSize& size, const WindowFlags& flags) override;
         void     PollEventsSimple() override;
 
-        void OnWindowClosed_Internal(class WindowsWindow* pWindow);
-
     private:
         HINSTANCE m_HInstance = nullptr;
     };
