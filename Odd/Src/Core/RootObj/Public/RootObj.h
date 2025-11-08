@@ -29,7 +29,9 @@ namespace Odd
 
         size_t AddRef() const;
         size_t Release() const;
+        void   ForceExpire() const;
         size_t GetRefCount() const;
+        bool   Expired() const;
 
         inline Internal::RootObjectID GetRootObjectID() const { return m_RootObjectID; }
 
@@ -46,12 +48,13 @@ namespace Odd
         size_t RootObjGetRefCount(void* pObj);
 
         extern void InitializeRootObjectSystem();
+        extern void FlushExpiredRootObjects();
         extern void ShutdownRootObjectSystem();
     } // namespace Internal
 
-    template <std::derived_from<RootObj> T>
-    inline T* MakeObject()
+    template <std::derived_from<RootObj> T, typename... Args>
+    inline T* MakeObject(Args&&... inArgs)
     {
-        return OddNew<T>();
+        return OddNew<T>(std::forward<Args>(inArgs)...);
     }
 } // namespace Odd

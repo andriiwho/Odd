@@ -21,7 +21,9 @@ namespace Odd
     using Vector = std::vector<T, Allocator>;
 
     template <typename CharType, typename CharTraits = std::char_traits<CharType>, typename Allocator = DefaultSTDAllocator<CharType>>
-    using String = std::basic_string<CharType, CharTraits, Allocator>;
+    using BasicString = std::basic_string<CharType, CharTraits, Allocator>;
+
+    using String = BasicString<char>;
 
     template <typename Key, typename T, typename Hash = std::hash<Key>, typename KeyEqual = std::equal_to<Key>, typename Allocator = DefaultSTDAllocator<std::pair<const Key, T>>>
     using HashMap = std::unordered_map<Key, T, Hash, KeyEqual, Allocator>;

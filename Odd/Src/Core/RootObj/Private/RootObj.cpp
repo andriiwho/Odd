@@ -24,9 +24,20 @@ namespace Odd
         return newCount;
     }
 
+    void RootObj::ForceExpire() const
+    {
+        m_RefCount.store(0, std::memory_order::release);
+        Internal::GRootObjRegistry->MarkRootObjectExpired(m_RootObjectID);
+    }
+
     size_t RootObj::GetRefCount() const
     {
         return m_RefCount.load(std::memory_order_relaxed);
+    }
+
+    bool RootObj::Expired() const
+    {
+        return GetRefCount() == 0;
     }
 
     extern void Internal::DeleteRootObj(void* pObj)
@@ -72,6 +83,11 @@ namespace Odd
     extern void Internal::InitializeRootObjectSystem()
     {
         RootObjRegistry::Init();
+    }
+
+    extern void Internal::FlushExpiredRootObjects()
+    {
+        GRootObjRegistry->FlushExpiredRootObjects();
     }
 
     extern void Internal::ShutdownRootObjectSystem()
