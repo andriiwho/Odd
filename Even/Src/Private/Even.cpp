@@ -1,16 +1,11 @@
-#include "OddCore.h"
-#include "Main/Main.h"
-#include "ObjPtr.h"
+#include "OddEntryPoint.h"
 
 int main(int argc, char const* const* const argv)
 {
     using namespace Odd;
-    oddValidate(InitializeMemoryPool());
-    {
-        ObjPtr mainObj{ MakeObject<Main>() };
-        oddValidate(mainObj != nullptr);
-        mainObj->Launch(std::span<const char* const>(argv, argc));
-    }
-    ShutdownMemoryPool();
+    
+    EntryPoint entryPoint(ContainerHelpers::MakeSpan(argv, argc));
+    entryPoint.Main();
+
     return 0;
 }

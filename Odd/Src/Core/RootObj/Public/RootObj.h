@@ -10,38 +10,48 @@
 
 namespace Odd
 {
-	class RootObj
-	{
-	public:
-		RootObj();
-		virtual ~RootObj() = default;
+    namespace Internal
+    {
+        enum class RootObjectID : uint64_t;
+    }
 
-		RootObj(const RootObj&) = delete;
-		RootObj& operator=(const RootObj&) = delete;
+    class RootObj
+    {
+    public:
+        RootObj();
+        virtual ~RootObj() = default;
 
-		RootObj(RootObj&&) noexcept = delete;
-		RootObj& operator=(RootObj&&) noexcept = delete;
-		
-		size_t AddRef() const;
-		size_t Release() const;
-		size_t GetRefCount() const;
+        RootObj(const RootObj&) = delete;
+        RootObj& operator=(const RootObj&) = delete;
 
+        RootObj(RootObj&&) noexcept = delete;
+        RootObj& operator=(RootObj&&) noexcept = delete;
 
-	private:
-		mutable std::atomic_size_t m_RefCount;
-	};
+        size_t AddRef() const;
+        size_t Release() const;
+        size_t GetRefCount() const;
 
-	namespace Internal
-	{
-		void DeleteRootObj(void* pObj);
-		size_t RootObjAddRef(void* pObj);
-		size_t RootObjRelease(void* pObj);
-		size_t RootObjGetRefCount(void* pObj);
-	}
+        inline Internal::RootObjectID GetRootObjectID() const { return m_RootObjectID; }
 
-	template<std::derived_from<RootObj> T>
-	inline T* MakeObject()
-	{
+    private:
+        mutable std::atomic_size_t m_RefCount;
+        Internal::RootObjectID     m_RootObjectID;
+    };
+
+    namespace Internal
+    {
+        void   DeleteRootObj(void* pObj);
+        size_t RootObjAddRef(void* pObj);
+        size_t RootObjRelease(void* pObj);
+        size_t RootObjGetRefCount(void* pObj);
+
+        extern void InitializeRootObjectSystem();
+        extern void ShutdownRootObjectSystem();
+    } // namespace Internal
+
+    template <std::derived_from<RootObj> T>
+    inline T* MakeObject()
+    {
         return OddNew<T>();
-	}
-}
+    }
+} // namespace Odd

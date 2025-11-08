@@ -1,18 +1,17 @@
 #pragma once
 
-#include "Types.h"
 #include <array>
 #include <cstddef>
 #include <cstdint>
 #include <mutex>
 #include <unordered_set>
 
+#include "Macros.h"
+
 namespace Odd
 {
-    // ============================================================================
     // Configuration Constants
     // ============================================================================
-
     // Page sizes
     constexpr size_t SMALL_PAGE_SIZE = 4096;   // 4 KB
     constexpr size_t MEDIUM_PAGE_SIZE = 65536; // 64 KB
@@ -36,11 +35,8 @@ namespace Odd
     // Alignment
     constexpr size_t ALLOCATION_ALIGNMENT = 16;
 
-    // ============================================================================
     // Configuration Structures
     // ============================================================================
-
-    // Memory pool configuration
     struct MemoryPoolConfig
     {
         // Page sizes (can be customized)
@@ -65,9 +61,6 @@ namespace Odd
     };
 
     // ============================================================================
-    // Error Codes
-    // ============================================================================
-
     enum class MemoryError
     {
         None = 0,
@@ -82,9 +75,6 @@ namespace Odd
     };
 
     // ============================================================================
-    // Statistics Structure
-    // ============================================================================
-
     struct MemoryPoolStats
     {
         // Overall statistics
@@ -110,17 +100,11 @@ namespace Odd
     };
 
     // ============================================================================
-    // Forward Declarations
-    // ============================================================================
-
     struct PageMetadata;
     struct LargeAllocationHeader;
     class MemoryPool;
 
     // ============================================================================
-    // Free List Node
-    // ============================================================================
-
     // When a chunk is free, we store a pointer to the next free chunk in the chunk itself
     struct FreeListNode
     {
@@ -128,9 +112,6 @@ namespace Odd
     };
 
     // ============================================================================
-    // Allocation Header
-    // ============================================================================
-
     // Header stored before each small/medium allocation for O(1) free
     struct AllocationHeader
     {
@@ -140,9 +121,6 @@ namespace Odd
     };
 
     // ============================================================================
-    // Page Metadata
-    // ============================================================================
-
     // Metadata for each page - stored WITH the page memory as a header
     struct PageMetadata
     {
@@ -159,18 +137,15 @@ namespace Odd
     };
 
     // ============================================================================
-    // Large Allocation Header
-    // ============================================================================
-
-    // Header for large allocations (>32KB) - stored before the allocation
+    // Header for large allocations @see LARGE_THRESHOLD - stored before the allocation
     // These are allocated directly from the OS
     struct LargeAllocationHeader
     {
         size_t                 Size;  // Size of the allocation (excluding header)
         uint32_t               Magic; // Magic number for validation (0xCAFEBABE)
         uint32_t               Padding;
-        LargeAllocationHeader* Next; // Next large allocation in the list
-        LargeAllocationHeader* Prev; // Previous large allocation in the list
+        LargeAllocationHeader* Next;
+        LargeAllocationHeader* Prev;
     };
 
     // ============================================================================
@@ -180,21 +155,20 @@ namespace Odd
     class MemoryPool
     {
     public:
+        // *Client API*
+        void* Allocate(size_t size);
+        void  Free(void* ptr);
+        void* Reallocate(void* ptr, size_t newSize);
+
+    public:
         MemoryPool();
         ~MemoryPool();
 
-        // Initialize the pool with optional configuration
         bool Initialize(const MemoryPoolConfig& config = MemoryPoolConfig::Default());
 
         // Shutdown and free all memory
         void Shutdown();
 
-        // Core allocation functions
-        void* Allocate(size_t size);
-        void  Free(void* ptr);
-        void* Reallocate(void* ptr, size_t newSize);
-
-        // Query functions
         size_t GetTotalAllocated() const { return m_TotalAllocated; }
         size_t GetTotalUsed() const { return m_TotalUsed; }
         size_t GetNumPages() const { return m_NumPages; }
@@ -208,7 +182,6 @@ namespace Odd
         MemoryError GetLastError() const { return m_LastError; }
         const char* GetErrorString(MemoryError error) const;
 
-        // Configuration
         const MemoryPoolConfig& GetConfig() const { return m_Config; }
 
     private:
@@ -323,4 +296,55 @@ namespace Odd
             OddFree(pObj);
         }
     }
+
+    template <typename T>
+    class DefaultSTDAllocator
+    {
+    public:
+        using value_type = T;
+        using size_type = std::size_t;
+        using difference_type = std::ptrdiff_t;
+        using propagate_on_container_move_assignment = std::true_type;
+        using is_always_equal = std::true_type;
+
+        constexpr DefaultSTDAllocator() noexcept = default;
+        constexpr DefaultSTDAllocator(const DefaultSTDAllocator&) noexcept = default;
+
+        template <typename U>
+        constexpr DefaultSTDAllocator(const DefaultSTDAllocator<U>&) noexcept {}
+
+        constexpr ~DefaultSTDAllocator() = default;
+
+        [[nodiscard]] T* allocate(std::size_t n)
+        {
+            ODD_BEGIN_CRASH_ON_EXCEPTIONS
+
+            if (n > std::numeric_limits<std::size_t>::max() / sizeof(T))
+            {
+                throw std::bad_array_new_length();
+            }
+
+            void* p = OddMalloc(n * sizeof(T));
+            if (!p)
+            {
+                throw std::bad_alloc();
+            }
+
+            return static_cast<T*>(p);
+
+            ODD_END_CRASH_ON_EXCEPTIONS
+        }
+
+        void deallocate(T* p, std::size_t) noexcept
+        {
+            OddFree(p);
+        }
+
+        // C++23: Equality comparison
+        template <typename U>
+        friend constexpr bool operator==(const DefaultSTDAllocator&, const DefaultSTDAllocator<U>&) noexcept
+        {
+            return true; // All instances are interchangeable (stateless allocator)
+        }
+    };
 } // namespace Odd

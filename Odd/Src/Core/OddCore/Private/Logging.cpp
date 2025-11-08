@@ -22,10 +22,12 @@ namespace Odd
 
         GLogger->set_level(spdlog::level::trace);
         GLogger->set_pattern("[%H:%M:%S] (%n) %^[%l]%$: %v");
+        GLogger->info("Logging initialized.");
     }
 
     void ShutdownLogging()
     {
+        GLogger->info("Shutting down logging.");
         if (GLogger)
             OddDelete(GLogger);
 
@@ -34,6 +36,7 @@ namespace Odd
 
     spdlog::logger* GetGlobalLogger()
     {
+        oddValidateMsg(GLogger, "Did you call Initialize logging?");
         return GLogger;
     }
 

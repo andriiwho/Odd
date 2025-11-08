@@ -13,22 +13,15 @@ namespace Odd
 {
     // ============================================================================
     // Magic Numbers for Validation
-    // ============================================================================
-
     constexpr uint32_t ALLOCATION_MAGIC = 0xDEADBEEF;
     constexpr uint32_t LARGE_ALLOC_MAGIC = 0xCAFEBABE;
 
     // ============================================================================
     // Global Memory Pool Instance
-    // ============================================================================
-
     static MemoryPool* GGlobalMemoryPool = nullptr;
 
-    // ============================================================================
     // Helper Functions
     // ============================================================================
-
-    // Round up to next power of 2
     static inline size_t RoundUpPowerOf2(size_t value)
     {
         if (value == 0)
@@ -46,6 +39,7 @@ namespace Odd
         return value;
     }
 
+    // ============================================================================
     // Get the log2 of a power of 2 value
     static inline uint8_t Log2(size_t value)
     {
@@ -57,7 +51,7 @@ namespace Odd
         return result;
     }
 
-    // Align a size to a specific alignment
+    // ============================================================================
     static inline size_t AlignSize(size_t size, size_t alignment)
     {
         return (size + alignment - 1) & ~(alignment - 1);
@@ -69,10 +63,7 @@ namespace Odd
         return (rcast(uintptr_t, ptr) & (alignment - 1)) == 0;
     }
 
-    // ============================================================================
     // MemoryPool Implementation
-    // ============================================================================
-
     MemoryPool::MemoryPool()
         : m_LargeAllocations(nullptr)
         , m_TotalAllocated(0)
