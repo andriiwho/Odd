@@ -5,6 +5,32 @@ namespace Odd::Internal
 {
     RootObjRegistry* GRootObjRegistry = nullptr;
 
+    union RootObjIDUnion
+    {
+        RootObjectID Handle;
+        struct
+        {
+            uint32_t Id;
+            uint32_t Version;
+        };
+    };
+
+    static uint32_t GetObjID(RootObjectID id)
+    {
+        RootObjIDUnion u{
+            .Handle = id,
+        };
+        return u.Id;
+    }
+
+    static uint32_t GetObjVersion(RootObjectID id)
+    {
+        RootObjIDUnion u{
+            .Handle = id,
+        };
+        return u.Version;
+    }
+
     RootObjectID RootObjRegistry::RegisterRootObj(RootObj* pObj)
     {
         std::unique_lock lck(m_NewObjMutex);
@@ -12,19 +38,42 @@ namespace Odd::Internal
         {
             RootObjectID id = m_FreeIDs.back();
             m_FreeIDs.pop_back();
-            m_ActiveRootObjects[scast(size_t, id)] = pObj;
-            return id;
+
+            // Convert ID to index
+            RootObjIDUnion u{
+                .Handle = id,
+            };
+
+            // Here we get the slot, which already contains the correct version.
+            // But the free handle doesn't. So we need to adjust the handle.
+            auto& slot = m_ActiveRootObjects[scast(size_t, GetObjID(id))];
+            slot.Obj = pObj;
+
+            // Set the new generation version and convert to handle.
+            u.Version = slot.Generation;
+            return u.Handle;
         }
 
-        RootObjectID id = scast(RootObjectID, m_ActiveRootObjects.size());
-        m_ActiveRootObjects.push_back(pObj);
-        return id;
+        RootObjIDUnion u{
+            .Handle = scast(RootObjectID, m_ActiveRootObjects.size()),
+        };
+        m_ActiveRootObjects.push_back({
+            .Obj = pObj,
+            .Generation = 0,
+        });
+        return u.Handle;
     }
 
     void RootObjRegistry::MarkRootObjectExpired(RootObjectID pObj)
     {
         std::unique_lock lck(m_ExpireMutex);
-        m_ExpiredRootObjects.push_back(pObj);
+        auto&            slot = GetSlot(pObj);
+
+        m_ExpiredRootObjects.push_back(slot.Obj);
+        m_FreeIDs.push_back(pObj);
+
+        // Increase the pointer generation.
+        slot.Generation++;
     }
 
     void RootObjRegistry::FlushExpiredRootObjects()
@@ -33,20 +82,11 @@ namespace Odd::Internal
             return;
 
         std::unique_lock lck(m_ExpireMutex);
-        for (RootObjectID id : m_ExpiredRootObjects)
+        for (RootObj* pObj : m_ExpiredRootObjects)
         {
-            size_t index = scast(size_t, id);
-            if (index < m_ActiveRootObjects.size())
+            if (pObj)
             {
-                RootObj* pObj = m_ActiveRootObjects[index];
-                if (pObj)
-                {
-                    OddDelete(pObj);
-                    m_ActiveRootObjects[index] = nullptr;
-
-                    std::unique_lock lck2(m_NewObjMutex);
-                    m_FreeIDs.push_back(id);
-                }
+                OddDelete(pObj);
             }
         }
         m_ExpiredRootObjects.clear();
@@ -75,6 +115,34 @@ namespace Odd::Internal
         m_ActiveRootObjects.reserve(1024);
         m_ExpiredRootObjects.reserve(1024);
         m_FreeIDs.reserve(1024);
+    }
+
+    Odd::Internal::RootObjectSlot& RootObjRegistry::GetSlot(RootObjectID id)
+    {
+        RootObjIDUnion u{
+            .Handle = id,
+        };
+
+        oddValidate(m_ActiveRootObjects.size() > u.Id);
+        return m_ActiveRootObjects.at(u.Id);
+    }
+
+    const RootObjectSlot& RootObjRegistry::GetSlot(RootObjectID id) const
+    {
+        return cncast(RootObjRegistry*, this)->GetSlot(id);
+    }
+
+    RootObj* RootObjRegistry::TryGet(RootObjectID id) const
+    {
+        if (m_ActiveRootObjects.size() <= GetObjID(id))
+            return nullptr;
+
+        std::unique_lock lck(m_ExpireMutex);
+        const auto& slot = GetSlot(id);
+        if (slot.Generation != GetObjVersion(id))
+            return nullptr;
+
+        return slot.Obj;
     }
 
 } // namespace Odd::Internal

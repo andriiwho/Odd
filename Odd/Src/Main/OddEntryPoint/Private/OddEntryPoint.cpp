@@ -2,7 +2,7 @@
 #include "LuaRuntime.h"
 #include "RootObj.h"
 #include "OddPlatformCore.h"
-#include "ObjPtr.h"
+#include "WeakObjPtr.h"
 
 namespace Odd
 {
@@ -34,7 +34,7 @@ namespace Odd
 
     void EntryPoint::Main()
     {
-        IWindow* mainWindow = GPlatform->CreatePlatformWindow(
+        WeakObjPtr<IWindow> mainWindow = GPlatform->CreatePlatformWindow(
             "A Window",
             WindowSize{
                 .Width = 800,
@@ -45,7 +45,7 @@ namespace Odd
                 .Fullscreen = false,
                 .Borderless = false,
             });
-        oddValidateMsg(mainWindow != nullptr, "Failed to create main window.");
+        oddValidateMsg(mainWindow.IsValid(), "Failed to create main window.");
         mainWindow->Show();
 
         while (true)
@@ -54,7 +54,7 @@ namespace Odd
             // This is safe to call here, because window is not immediately deleted on close.
             // But e.g. next frame it would be really gone.
             // Because the memory is reclaimed only when we flush expired root objects.
-            if (mainWindow->Expired())
+            if (!mainWindow.IsValid())
                 break;
 
             // Collect "garbage" every frame. In a real application this would be done less frequently.
