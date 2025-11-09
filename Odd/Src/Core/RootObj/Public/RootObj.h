@@ -34,10 +34,11 @@ namespace Odd
 
         /**
          * Check if the object is expired (i.e., ref count is zero).
-         * This is a lightweight check and does not guarantee that the object is still valid.
+         * This is a lightweight check but it doesn't guarantee that the object is still valid.
          * It's also unsafe to call after flushing the expired root objects.
+         * If you want more safe way of checking if the object is valid @see WeakObjPtr<T>
          */
-        bool   Expired() const;
+        bool Expired() const;
 
         inline Internal::RootObjectID GetRootObjectID() const { return m_RootObjectID; }
 

@@ -3,6 +3,7 @@
 #include "RootObj.h"
 #include "OddPlatformCore.h"
 #include "WeakObjPtr.h"
+#include "RHIDeviceManager.h"
 
 namespace Odd
 {
@@ -34,7 +35,9 @@ namespace Odd
 
     void EntryPoint::Main()
     {
-        WeakObjPtr<IWindow> mainWindow = GPlatform->CreatePlatformWindow(
+        UniquePtr<RHIDeviceManager> rhiDeviceManager(InitRHIDeviceManager());
+        oddValidate(rhiDeviceManager != nullptr);
+        rhiDeviceManager->CreateWindowAndDevice(
             "A Window",
             WindowSize{
                 .Width = 800,
@@ -45,15 +48,11 @@ namespace Odd
                 .Fullscreen = false,
                 .Borderless = false,
             });
-        oddValidateMsg(mainWindow.IsValid(), "Failed to create main window.");
-        mainWindow->Show();
 
+        WeakObjPtr<IWindow> mainWindow = rhiDeviceManager->GetMainWindow();
         while (true)
         {
             GPlatform->PollEventsSimple();
-            // This is safe to call here, because window is not immediately deleted on close.
-            // But e.g. next frame it would be really gone.
-            // Because the memory is reclaimed only when we flush expired root objects.
             if (!mainWindow.IsValid())
                 break;
 
