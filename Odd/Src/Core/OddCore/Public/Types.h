@@ -8,6 +8,7 @@
 
 #include <vector>
 #include <string>
+#include <string_view>
 #include <memory>
 #include <unordered_map>
 #include <map>
@@ -15,6 +16,9 @@
 
 namespace Odd
 {
+    using float32_t = float;
+    using float64_t = double;
+
     using TypeOfNull = decltype(nullptr);
 
     template <typename T, typename Allocator = DefaultSTDAllocator<T>>
@@ -24,6 +28,7 @@ namespace Odd
     using BasicString = std::basic_string<CharType, CharTraits, Allocator>;
 
     using String = BasicString<char>;
+    using StringView = std::string_view;
 
     template <typename Key, typename T, typename Hash = std::hash<Key>, typename KeyEqual = std::equal_to<Key>, typename Allocator = DefaultSTDAllocator<std::pair<const Key, T>>>
     using HashMap = std::unordered_map<Key, T, Hash, KeyEqual, Allocator>;

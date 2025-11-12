@@ -1,9 +1,12 @@
 #include "OddEntryPoint.h"
 #include "LuaRuntime.h"
 #include "RootObj.h"
+#include "OddConfig.h"
 #include "OddPlatformCore.h"
 #include "WeakObjPtr.h"
 #include "RHIDeviceManager.h"
+
+#include <filesystem>
 
 namespace Odd
 {
@@ -71,9 +74,34 @@ namespace Odd
 
 namespace Odd
 {
+    static void InitializeRootFolder()
+    {
+        static constexpr int  maxDepth = 50;
+        int                   currentDepth = 0;
+        std::filesystem::path current = std::filesystem::current_path();
+        while (!std::filesystem::exists(current / "OddProject.lua"))
+        {
+            if (current.has_parent_path())
+            {
+                current = current.parent_path();
+            }
+            else
+            {
+                oddValidateMsg(false, "Failed to find OddProject.lua");
+            }
+
+            currentDepth++;
+            oddValidateMsg(currentDepth < maxDepth, "Failed to find OddProject.lua");
+        }
+
+        std::filesystem::current_path(current);
+    }
+
     // ============================================================================
     void InitializeCore()
     {
+        InitializeRootFolder();
+
         // Init memory framework
         auto memConfig = MemoryPoolConfig::Default();
         InitializeMemoryPool(memConfig);
@@ -86,11 +114,17 @@ namespace Odd
         GLuaRuntime = MakeObject<LuaRuntime>();
         oddValidateMsg(GLuaRuntime != nullptr, "Failed to create LuaRuntime");
         ODD_LOG_INFO("LuaRuntime initialized.");
+
+        // Init config after Lua runtime is initialized.
+        ConfigInit();
     }
 
     // ============================================================================
     void ShutdownCore()
     {
+        // Shutdown config
+        ConfigShutdown();
+
         // Shutdown lua
         if (GLuaRuntime)
         {

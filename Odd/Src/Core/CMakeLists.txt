@@ -1,3 +1,4 @@
-add_subdirectory(RootObj)
+add_subdirectory(OddRootObj)
 add_subdirectory(OddCore)
-add_subdirectory(LuaCore)
+add_subdirectory(OddLuaCore)
+add_subdirectory(OddConfig)

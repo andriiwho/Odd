@@ -2,8 +2,9 @@
 
 namespace Odd
 {
-	class IRHIDevice
+	class RHIDevice
 	{
     public:
+        virtual ~RHIDevice() = default;
 	};
 }

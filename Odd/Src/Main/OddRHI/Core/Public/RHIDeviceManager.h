@@ -24,12 +24,12 @@ namespace Odd
 
         virtual void CreateWindowAndDevice(const String& title, const WindowSize& size, const WindowFlags& flags) = 0;
 
-        IRHIDevice& GetDevice() { return *Device; }
-        const IRHIDevice& GetDevice() const { return *Device; }
+        RHIDevice& GetDevice() { return *Device; }
+        const RHIDevice& GetDevice() const { return *Device; }
         WeakObjPtr<IWindow> GetMainWindow() const { return MainWindow; }
 
     protected:
-        UniquePtr<IRHIDevice> Device{};
+        UniquePtr<RHIDevice> Device{};
         WeakObjPtr<IWindow>   MainWindow{};
     };
 
