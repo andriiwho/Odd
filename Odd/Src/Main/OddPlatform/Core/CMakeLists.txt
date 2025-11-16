@@ -5,6 +5,6 @@ target_link_libraries(OddPlatformCore
 		OddCore
 		OddRootObj)
 
-if (WIN32)
-	target_link_libraries(OddPlatformCore PRIVATE OddPlatformWindows)
+if (WIN32 OR UNIX OR APPLE OR ANDROID)
+	target_link_libraries(OddPlatformCore PRIVATE OddPlatformSDL)
 endif()

@@ -1,5 +1,5 @@
 add_subdirectory(Core)
 
-if (WIN32)
-	add_subdirectory(Windows)
+if (WIN32 OR UNIX OR APPLE OR ANDROID)
+	add_subdirectory(SDL)
 endif()

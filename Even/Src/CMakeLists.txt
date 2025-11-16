@@ -4,8 +4,6 @@ target_link_libraries(Even
 		Odd
 )
 
-Odd_CopyLuaLibrary(Even)
-
 if (WIN32)
 	Odd_CopyD3D12Agility(Even)
 endif()

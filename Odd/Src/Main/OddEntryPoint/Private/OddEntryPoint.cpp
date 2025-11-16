@@ -1,7 +1,5 @@
 #include "OddEntryPoint.h"
-#include "LuaRuntime.h"
 #include "RootObj.h"
-#include "OddConfig.h"
 #include "OddPlatformCore.h"
 #include "WeakObjPtr.h"
 #include "RHIDeviceManager.h"
@@ -12,7 +10,6 @@ namespace Odd
 {
     // ============================================================================
     // Statics
-    static LuaRuntime* GLuaRuntime = nullptr;
 
     // ============================================================================
     // Core iniitalization functions
@@ -102,37 +99,19 @@ namespace Odd
     {
         InitializeRootFolder();
 
+        // We need to initialize config before anything else
+
         // Init memory framework
         auto memConfig = MemoryPoolConfig::Default();
         InitializeMemoryPool(memConfig);
         Internal::InitializeRootObjectSystem();
 
-        // Other systems that should go before lua
         InitializeLogging();
-
-        // Init lua runtime.
-        GLuaRuntime = MakeObject<LuaRuntime>();
-        oddValidateMsg(GLuaRuntime != nullptr, "Failed to create LuaRuntime");
-        ODD_LOG_INFO("LuaRuntime initialized.");
-
-        // Init config after Lua runtime is initialized.
-        ConfigInit();
     }
 
     // ============================================================================
     void ShutdownCore()
     {
-        // Shutdown config
-        ConfigShutdown();
-
-        // Shutdown lua
-        if (GLuaRuntime)
-        {
-            GLuaRuntime->Release();
-            GLuaRuntime = nullptr;
-            ODD_LOG_INFO("LuaRuntime shut down.");
-        }
-
         // Shutdown other systems
         ShutdownLogging();
 

@@ -18,10 +18,21 @@ namespace Odd
         bool Borderless : 1 = false;
     };
 
+    struct PlatformWindowCreateInfo
+    {
+        String      Title{};
+        WindowSize  Size{};
+        WindowFlags Flags{};
+    };
+
     class IWindow : public RootObj
     {
     public:
+        ODD_ROOT_OBJECT(IWindow)
+
         virtual ~IWindow() = default;
+
+        ODD_NO_MOVE_COPY_CONSTRUCTORS(IWindow);
 
         virtual WindowSize GetSize() const noexcept = 0;
         virtual void       SetSize(const WindowSize& size) = 0;
@@ -36,7 +47,7 @@ namespace Odd
 
         // Flags
         virtual WindowFlags GetFlags() const noexcept = 0;
-        
+
         // Platform-specific handle retrieval
         virtual void* GetPlatformNativeHandle() const noexcept = 0;
 

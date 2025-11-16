@@ -1,0 +1,6 @@
+[submodule "Odd/ThirdParty/SDL"]
+	path = Odd/ThirdParty/SDL
+	url = https://github.com/libsdl-org/sdl
+[submodule "Odd/ThirdParty/spdlog"]
+	path = Odd/ThirdParty/spdlog
+	url = https://github.com/gabime/spdlog

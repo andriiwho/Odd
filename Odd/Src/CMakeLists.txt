@@ -6,6 +6,5 @@ add_library(Odd INTERFACE)
 target_link_libraries(Odd INTERFACE 
 	OddCore
 	OddRootObj
-	OddLuaCore
 
 	OddEntryPoint)

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "OddCore.h"
+#include "RootObjMacros.h"
 #include <concepts>
 
 #include <atomic>
@@ -18,6 +19,8 @@ namespace Odd
     class RootObj
     {
     public:
+        ODD_ROOT_OBJECT(RootObj)
+
         RootObj();
         virtual ~RootObj() = default;
 
@@ -27,10 +30,11 @@ namespace Odd
         RootObj(RootObj&&) noexcept = delete;
         RootObj& operator=(RootObj&&) noexcept = delete;
 
-        size_t AddRef() const;
-        size_t Release() const;
-        void   ForceExpire() const;
+        size_t AddRef();
+        size_t Release();
+        void   ForceExpire();
         size_t GetRefCount() const;
+        size_t ForceRefCount(size_t newCount);
 
         /**
          * Check if the object is expired (i.e., ref count is zero).
@@ -38,13 +42,30 @@ namespace Odd
          * It's also unsafe to call after flushing the expired root objects.
          * If you want more safe way of checking if the object is valid @see WeakObjPtr<T>
          */
+        [[deprecated("Use WeakObjPtr for checking expiration semantics")]]
         bool Expired() const;
 
         inline Internal::RootObjectID GetRootObjectID() const { return m_RootObjectID; }
 
+        template <typename T, typename... Args>
+        T*       CreateChildObject(Args&&... args);
+        void     Attach(RootObj* next);
+        void     Detach(RootObj* obj);
+
+        RootObj* GetRoot() const;
+        RootObj* GetLastChild() const;
+
+        bool     IsParentOf(RootObj* obj) const;
+
     private:
+        void MarkChildrenExpired();
+
         mutable std::atomic_size_t m_RefCount;
         Internal::RootObjectID     m_RootObjectID;
+
+        // Child/Parent relationship system.
+        RootObj* m_Next{};
+        RootObj* m_Prev{};
     };
 
     namespace Internal
@@ -63,5 +84,24 @@ namespace Odd
     inline T* MakeObject(Args&&... inArgs)
     {
         return OddNew<T>(std::forward<Args>(inArgs)...);
+    }
+
+    template <typename T, typename... Args>
+    T* RootObj::CreateChildObject(Args&&... args)
+    {
+        static_assert(std::is_base_of_v<RootObj, T>);
+
+        if (m_Next != nullptr)
+        {
+            return m_Next->CreateChildObject<T>(std::forward<Args>(args)...);
+        }
+
+        T* outChild = MakeObject<T>(std::forward<Args>(args)...);
+        if (outChild != nullptr)
+        {
+            outChild->m_Prev = this;
+            m_Next = outChild;
+        }
+        return outChild;
     }
 } // namespace Odd
