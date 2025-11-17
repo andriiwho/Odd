@@ -3,6 +3,7 @@
 #include "OddPlatformCore.h"
 #include "WeakObjPtr.h"
 #include "RHIDeviceManager.h"
+#include "OddConfig.h"
 
 #include <filesystem>
 
@@ -38,10 +39,10 @@ namespace Odd
         UniquePtr<RHIDeviceManager> rhiDeviceManager(InitRHIDeviceManager());
         oddValidate(rhiDeviceManager != nullptr);
         rhiDeviceManager->CreateWindowAndDevice(
-            "A Window",
+            ODD_CONF_OR(String, "Engine.MainWindow.Title", "Odd"),
             WindowSize{
-                .Width = 800,
-                .Height = 600,
+                .Width = ODD_CONF_OR(uint32_t, "Engine.MainWindow.Width", 800),
+                .Height = ODD_CONF_OR(uint32_t, "Engine.MainWindow.Height", 600),
             },
             WindowFlags{
                 .Resizable = true,
@@ -76,7 +77,7 @@ namespace Odd
         static constexpr int  maxDepth = 50;
         int                   currentDepth = 0;
         std::filesystem::path current = std::filesystem::current_path();
-        while (!std::filesystem::exists(current / "OddProject.lua"))
+        while (!std::filesystem::exists(current / "OddProject.yaml"))
         {
             if (current.has_parent_path())
             {
@@ -100,6 +101,7 @@ namespace Odd
         InitializeRootFolder();
 
         // We need to initialize config before anything else
+        Internal::InitializeConfig();
 
         // Init memory framework
         auto memConfig = MemoryPoolConfig::Default();
@@ -122,6 +124,8 @@ namespace Odd
         PrintGlobalMemoryStats();
 #endif
         ShutdownMemoryPool();
+
+        Internal::ShutdownConfig();
     }
 
     // ============================================================================

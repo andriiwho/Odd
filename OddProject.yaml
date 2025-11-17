@@ -1,0 +1,9 @@
+# Engine configurations go here. You can override anything that's part of any engine configuration.
+# Though do it at your own risk.
+# This config is for building Even (the editor for the Odd Engin)
+Engine:
+  RootPath: Odd
+  
+Runtime:
+  RootPath: Even
+    

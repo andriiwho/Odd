@@ -28,6 +28,13 @@ namespace Odd
     using BasicString = std::basic_string<CharType, CharTraits, Allocator>;
 
     using String = BasicString<char>;
+    inline String ToString(const std::string& str)
+    {
+        String outString;
+        outString.assign_range(str);
+        return outString;
+    }
+
     using StringView = std::string_view;
 
     template <typename Key, typename T, typename Hash = std::hash<Key>, typename KeyEqual = std::equal_to<Key>, typename Allocator = DefaultSTDAllocator<std::pair<const Key, T>>>
