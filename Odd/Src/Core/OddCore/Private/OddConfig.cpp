@@ -138,9 +138,10 @@ namespace Odd
         YAML::Node current = m_Config;
         for (const auto& token : tokens)
         {
-            current.reset(std::as_const(current)[token]);
-            if (!current)
+            YAML::Node child = std::as_const(current)[token];
+            if (!child.IsDefined())
                 return std::nullopt;
+            current.reset(child);
         }
 
         return current;
