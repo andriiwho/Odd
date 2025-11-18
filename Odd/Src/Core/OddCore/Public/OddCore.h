@@ -6,3 +6,4 @@
 #include "OddWaysToCrash.h"
 #include "Helpers.h"
 #include "Logging.h"
+#include "OddConfig.h"

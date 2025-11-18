@@ -4,12 +4,12 @@
 
 namespace Odd::D3D12
 {
-    void D3D12DeviceManager::CreateWindowAndDevice(const String& title, const WindowSize& size, const WindowFlags& flags)
+    void Odd::D3D12::D3D12DeviceManager::CreateWindowAndDevice(const PlatformWindowCreateInfo& createInfo)
     {
         ODD_LOG_INFO("Initializing window and D3D12 device.");
 
         // Create window
-        MainWindow = GPlatform->CreatePlatformWindow({ title, size, flags });
+        MainWindow = GPlatform->CreatePlatformWindow(createInfo);
         oddValidateMsg(MainWindow.IsValid(), "Failed to create main window.");
         MainWindow->Show();
 

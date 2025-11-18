@@ -1,0 +1,4 @@
+Debug:
+  Enable: true
+  GPU: true
+  SyncQueueValidation: true

@@ -38,17 +38,15 @@ namespace Odd
     {
         UniquePtr<RHIDeviceManager> rhiDeviceManager(InitRHIDeviceManager());
         oddValidate(rhiDeviceManager != nullptr);
-        rhiDeviceManager->CreateWindowAndDevice(
-            ODD_CONF_OR(String, "Engine.MainWindow.Title", "Odd"),
-            WindowSize{
+        rhiDeviceManager->CreateWindowAndDevice({
+            .Title = ODD_CONF_OR(String, "Engine.MainWindow.Title", "Odd"),
+            .Size = {
                 .Width = ODD_CONF_OR(uint32_t, "Engine.MainWindow.Width", 800),
                 .Height = ODD_CONF_OR(uint32_t, "Engine.MainWindow.Height", 600),
             },
-            WindowFlags{
-                .Resizable = true,
-                .Fullscreen = false,
-                .Borderless = false,
-            });
+            .Flags = {},
+
+        });
 
         WeakObjPtr<IWindow> mainWindow = rhiDeviceManager->GetMainWindow();
         while (true)

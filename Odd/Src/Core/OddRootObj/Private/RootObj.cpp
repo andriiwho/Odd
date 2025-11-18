@@ -9,6 +9,23 @@ namespace Odd
     {
     }
 
+    RootObj::~RootObj()
+    {
+        // Ensure children are properly handled on destruction
+        // At this point, children should already be marked expired by MarkChildrenExpired
+        // or by the parent's Release/ForceExpire calls, but we ensure cleanup here as well
+        
+        // Remove from parent if we're still attached
+        if (m_Parent)
+        {
+            m_Parent->Detach(this);
+        }
+        
+        // Children should already be cleared by MarkChildrenExpired,
+        // but we clear again as a safety measure
+        m_Children.clear();
+    }
+
     size_t RootObj::AddRef()
     {
         return m_RefCount.fetch_add(1, std::memory_order::relaxed) + 1;
@@ -28,6 +45,7 @@ namespace Odd
     void RootObj::ForceExpire()
     {
         m_RefCount.store(0, std::memory_order::release);
+        MarkChildrenExpired();
         Internal::GRootObjRegistry->MarkRootObjectExpired(m_RootObjectID);
     }
 
@@ -47,113 +65,118 @@ namespace Odd
         return GetRefCount() == 0;
     }
 
-    void RootObj::Attach(RootObj* next)
+    void RootObj::Attach(RootObj* child)
     {
-        if (m_Next != nullptr)
-        {
-            m_Next->Attach(next);
+        if (!child)
             return;
-        }
 
-        if (next)
+        // Prevent self-attachment
+        if (child == this)
+            return;
+
+        // Prevent circular references: check if 'this' is a descendant of 'child'
+        // If we attach 'child' to 'this', but 'this' is already a descendant of 'child',
+        // we would create a cycle
+        if (child->IsParentOf(this))
+            return;
+
+        // Remove child from its previous parent
+        if (child->m_Parent)
         {
-            m_Next = next;
-            if (auto prev = next->m_Prev)
-            {
-                prev->Detach(next);
-            }
-            next->m_Prev = this;
-
-            // This is needed in order to ensure ownership.
-            next->ForceRefCount(1);
+            child->m_Parent->Detach(child);
         }
+
+        // Add to this object's children
+        m_Children.push_back(child);
+        child->m_Parent = this;
+
+        // This is needed in order to ensure ownership.
+        child->ForceRefCount(1);
     }
 
     void RootObj::Detach(RootObj* obj)
     {
-        if (m_Next == nullptr)
+        if (!obj)
             return;
 
 #ifndef NDEBUG
         oddValidate(IsParentOf(obj));
 #endif
 
-        RootObj* next = obj->m_Next;
-        RootObj* prev = obj->m_Prev;
-
-        if (next)
+        // Find and remove the child from the vector
+        auto it = std::find(m_Children.begin(), m_Children.end(), obj);
+        if (it != m_Children.end())
         {
-            next->m_Prev = prev;
-        }
-        if (prev)
-        {
-            prev->m_Next = next;
+            m_Children.erase(it);
+            obj->m_Parent = nullptr;
         }
     }
 
     RootObj* RootObj::GetRoot() const
     {
-        if (!m_Prev)
+        if (!m_Parent)
             return cncast(RootObj*, this);
 
-        return m_Prev->GetRoot();
+        return m_Parent->GetRoot();
     }
 
     RootObj* RootObj::GetLastChild() const
     {
-        if (!m_Next)
+        if (m_Children.empty())
             return cncast(RootObj*, this);
 
-        return m_Next->GetLastChild();
+        return m_Children.back()->GetLastChild();
     }
 
     bool RootObj::IsParentOf(RootObj* obj) const
     {
-        // Get the root
-        if (!m_Next)
+        if (!obj)
             return false;
 
-        RootObj* current = m_Next;
-        while (true)
+        // Check immediate children
+        for (RootObj* child : m_Children)
         {
-            if (current == obj)
+            if (child == obj)
                 return true;
-            else if (current->m_Next)
-            {
-                current = current->m_Next;
-            }
-            else
-                return false;
+
+            // Recursively check child's descendants
+            if (child->IsParentOf(obj))
+                return true;
         }
+
         return false;
     }
 
     void RootObj::MarkChildrenExpired()
     {
-        if (!m_Next)
-            return;
-
-        RootObj* current = GetLastChild();
-        while (true)
+        // Mark all children expired recursively (depth-first, post-order)
+        // This ensures children are expired before their parents
+        for (RootObj* child : m_Children)
         {
-            // We mark self expired manually from the latest child up to the head.
-            if (current == this)
-                break;
-
-            current->ForceExpire();
-
-            if (current->m_Prev)
-                current = current->m_Prev;
+            if (child)
+            {
+                // First recursively expire all descendants
+                child->MarkChildrenExpired();
+                // Then expire the child itself
+                child->ForceExpire();
+            }
         }
+        
+        // Clear the children vector after marking them expired
+        // The actual deletion will happen in FlushExpiredRootObjects
+        m_Children.clear();
     }
 
     extern void Internal::DeleteRootObj(void* pObj)
     {
         if (RootObj* pRootObj = scast(RootObj*, pObj))
         {
-            // For now just use delete
-            // OddDelete(pRootObj);
-            Internal::GRootObjRegistry->MarkRootObjectExpired(pRootObj->GetRootObjectID());
+            // This function is called to manually delete a root object.
+            // We force expire it, which will:
+            // 1. Set ref count to 0
+            // 2. Mark all children as expired recursively
+            // 3. Register this object in the expired list
+            pRootObj->ForceExpire();
         }
     }
 

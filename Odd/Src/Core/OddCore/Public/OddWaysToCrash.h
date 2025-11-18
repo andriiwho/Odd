@@ -13,6 +13,15 @@ namespace Odd
         const char* message = nullptr);
 } // namespace Odd
 
+// oddCrash: crash without conditions.
+#define oddCrash(...)                                                               \
+    do                                                                              \
+    {                                                                               \
+        auto message = std::format(##__VA_ARGS__);                                  \
+        Odd::ReportAssertionFailure("Crash!", __FILE__, __LINE__, message.c_str()); \
+    }                                                                               \
+    while (false)
+
 // oddValidate: Always crashes the program when condition is false, even in release builds
 #define oddValidate(condition)                                             \
     do                                                                     \
@@ -25,12 +34,12 @@ namespace Odd
     while (false)
 
 // oddValidateMsg: Always crashes with a formatted message when condition is false
-#define oddValidateMsg(condition, fmt, ...)                                                 \
+#define oddValidateMsg(condition, ...)                                                      \
     do                                                                                      \
     {                                                                                       \
         if (!(condition)) [[unlikely]]                                                      \
         {                                                                                   \
-            auto message = std::format(fmt, ##__VA_ARGS__);                                 \
+            auto message = std::format(##__VA_ARGS__);                                      \
             ::Odd::ReportAssertionFailure(#condition, __FILE__, __LINE__, message.c_str()); \
         }                                                                                   \
     }                                                                                       \

@@ -22,7 +22,7 @@ namespace Odd
         ODD_ROOT_OBJECT(RootObj)
 
         RootObj();
-        virtual ~RootObj() = default;
+        virtual ~RootObj();
 
         RootObj(const RootObj&) = delete;
         RootObj& operator=(const RootObj&) = delete;
@@ -48,14 +48,14 @@ namespace Odd
         inline Internal::RootObjectID GetRootObjectID() const { return m_RootObjectID; }
 
         template <typename T, typename... Args>
-        T*       CreateChildObject(Args&&... args);
-        void     Attach(RootObj* next);
-        void     Detach(RootObj* obj);
+        T*   CreateChildObject(Args&&... args);
+        void Attach(RootObj* next);
+        void Detach(RootObj* obj);
 
         RootObj* GetRoot() const;
         RootObj* GetLastChild() const;
 
-        bool     IsParentOf(RootObj* obj) const;
+        bool IsParentOf(RootObj* obj) const;
 
     private:
         void MarkChildrenExpired();
@@ -64,8 +64,8 @@ namespace Odd
         Internal::RootObjectID     m_RootObjectID;
 
         // Child/Parent relationship system.
-        RootObj* m_Next{};
-        RootObj* m_Prev{};
+        RootObj* m_Parent{};
+        Vector<RootObj*> m_Children{};
     };
 
     namespace Internal
@@ -90,18 +90,12 @@ namespace Odd
     T* RootObj::CreateChildObject(Args&&... args)
     {
         static_assert(std::is_base_of_v<RootObj, T>);
-
-        if (m_Next != nullptr)
-        {
-            return m_Next->CreateChildObject<T>(std::forward<Args>(args)...);
-        }
-
         T* outChild = MakeObject<T>(std::forward<Args>(args)...);
         if (outChild != nullptr)
         {
-            outChild->m_Prev = this;
-            m_Next = outChild;
+            outChild->m_Parent = this;
         }
+        m_Children.push_back(outChild);
         return outChild;
     }
 } // namespace Odd

@@ -22,5 +22,8 @@ namespace Odd::D3D12
         ComPtr<ID3D12Device5> m_Device{};
 
         void InitFactory();
+        void InitDebugInterface();
+        void SelectAdapter();
+        void CreateDevice();
     };
 } // namespace Odd::D3D12

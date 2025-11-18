@@ -13,11 +13,11 @@ namespace Odd
 
     static std::string LoadProjectRoot(const YAML::Node& node, const std::string& targetName)
     {
-        auto conf = node[targetName];
+        auto conf = std::as_const(node)[targetName];
         if (!conf)
             return {};
 
-        auto path = conf["RootPath"];
+        auto path = std::as_const(conf)["RootPath"];
         if (!path)
             return {};
 

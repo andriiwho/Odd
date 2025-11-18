@@ -22,7 +22,7 @@ namespace Odd
         RHIDeviceManager(RHIDeviceManager&&) noexcept = delete;
         RHIDeviceManager& operator=(RHIDeviceManager&&) noexcept = delete;
 
-        virtual void CreateWindowAndDevice(const String& title, const WindowSize& size, const WindowFlags& flags) = 0;
+        virtual void CreateWindowAndDevice(const PlatformWindowCreateInfo& createInfo) = 0;
 
         RHIDevice& GetDevice() { return *Device; }
         const RHIDevice& GetDevice() const { return *Device; }

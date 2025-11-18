@@ -11,11 +11,23 @@ namespace Odd
         uint32_t Height = 0;
     };
 
+    enum class RenderAPISupport : uint8_t
+    {
+        // Suitable for D3D12 and APIs that don't require special handling from windowing system.
+        DontCare,
+
+#if 0 // Unsupported
+        Vulkan,
+        Metal,
+#endif
+    };
+
     struct WindowFlags
     {
-        bool Resizable : 1 = true;
-        bool Fullscreen : 1 = false;
-        bool Borderless : 1 = false;
+        bool             Resizable : 1 = true;
+        bool             Fullscreen : 1 = false;
+        bool             Borderless : 1 = false;
+        RenderAPISupport ApiSupport : 2;
     };
 
     struct PlatformWindowCreateInfo
@@ -30,6 +42,7 @@ namespace Odd
     public:
         ODD_ROOT_OBJECT(IWindow)
 
+        IWindow();
         virtual ~IWindow() = default;
 
         ODD_NO_MOVE_COPY_CONSTRUCTORS(IWindow);
@@ -56,6 +69,5 @@ namespace Odd
 
     protected:
         friend class IPlatform;
-        IWindow() = default;
     };
 } // namespace Odd

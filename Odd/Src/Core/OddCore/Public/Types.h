@@ -28,6 +28,7 @@ namespace Odd
     using BasicString = std::basic_string<CharType, CharTraits, Allocator>;
 
     using String = BasicString<char>;
+    using WideString = BasicString<wchar_t>;
     inline String ToString(const std::string& str)
     {
         String outString;

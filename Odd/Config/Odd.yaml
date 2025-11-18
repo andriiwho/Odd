@@ -1,5 +1,3 @@
 Include:
   - MainWindow
-
-Strings:
-  X: "Hello, world!"  
+  - RHI
