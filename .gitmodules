@@ -7,3 +7,6 @@
 [submodule "yaml-cpp"]
 	path = Odd/ThirdParty/yaml-cpp
 	url = https://github.com/jbeder/yaml-cpp.git
+[submodule "D3D12MemoryAllocator"]
+	path = Odd/ThirdParty/D3D12MemoryAllocator
+	url = https://github.com/GPUOpen-LibrariesAndSDKs/D3D12MemoryAllocator.git

@@ -14,6 +14,6 @@ namespace Odd::D3D12
         MainWindow->Show();
 
         // Create the device
-        Device.reset(OddNew<D3D12Device>());
+        Device = ObjPtr(OddNew<D3D12Device>());
     }
 } // namespace Odd::D3D12

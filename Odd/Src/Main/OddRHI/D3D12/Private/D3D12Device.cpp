@@ -1,5 +1,6 @@
 #include "D3D12Device.h"
 #include "OddCore.h"
+#include "D3D12CommandQueue.h"
 
 namespace Odd::D3D12
 {
@@ -79,7 +80,7 @@ namespace Odd::D3D12
 
             char deviceNameBuffer[std::size(desc.Description)] = { 0 };
             wcstombs(deviceNameBuffer, desc.Description, std::size(deviceNameBuffer));
-            ODD_LOG_TRACE("Selected DXGI adapter: {}", deviceNameBuffer);            
+            ODD_LOG_TRACE("Selected DXGI adapter: {}", deviceNameBuffer);
         }
     }
 
@@ -89,4 +90,10 @@ namespace Odd::D3D12
         oddHrValidate(D3D12CreateDevice(m_Adapter.Get(), D3D_FEATURE_LEVEL_12_0, IID_PPV_ARGS(&m_Device)));
         ODD_LOG_TRACE("D3D12 device created.");
     }
+
+    RHICommandQueue* D3D12Device::CreateCommandQueue(RHICommandQueueType type)
+    {
+        return CreateChildObject<D3D12CommandQueue>(this, type);
+    }
+
 } // namespace Odd::D3D12

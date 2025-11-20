@@ -6,6 +6,7 @@
 #include "OddConfig.h"
 
 #include <filesystem>
+#include "RHI.h"
 
 namespace Odd
 {
@@ -36,19 +37,9 @@ namespace Odd
 
     void EntryPoint::Main()
     {
-        UniquePtr<RHIDeviceManager> rhiDeviceManager(InitRHIDeviceManager());
-        oddValidate(rhiDeviceManager != nullptr);
-        rhiDeviceManager->CreateWindowAndDevice({
-            .Title = ODD_CONF_OR(String, "Engine.MainWindow.Title", "Odd"),
-            .Size = {
-                .Width = ODD_CONF_OR(uint32_t, "Engine.MainWindow.Width", 800),
-                .Height = ODD_CONF_OR(uint32_t, "Engine.MainWindow.Height", 600),
-            },
-            .Flags = {},
+        SharedPtr<RHI> rhi = MakeShared<RHI>();
+        WeakObjPtr<IWindow> mainWindow = rhi->GetDeviceManager()->GetMainWindow();
 
-        });
-
-        WeakObjPtr<IWindow> mainWindow = rhiDeviceManager->GetMainWindow();
         while (true)
         {
             GPlatform->PollEventsSimple();

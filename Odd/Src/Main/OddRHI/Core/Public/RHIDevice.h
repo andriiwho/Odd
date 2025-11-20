@@ -1,10 +1,14 @@
 #pragma once
 
+#include "RootObj.h"
+
+#include "RHICommandQueue.h"
+
 namespace Odd
 {
-	class RHIDevice
-	{
+    class RHIDevice : public RootObj
+    {
     public:
-        virtual ~RHIDevice() = default;
-	};
-}
+        virtual RHICommandQueue* CreateCommandQueue(RHICommandQueueType type) = 0;
+    };
+} // namespace Odd

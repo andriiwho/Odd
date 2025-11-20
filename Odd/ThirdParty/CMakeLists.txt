@@ -9,3 +9,7 @@ set(YAML_CPP_DISABLE_UNINSTALL OFF CACHE BOOL "")
 set(YAML_USE_SYSTEM_GTEST OFF CACHE BOOL "")
 set(YAML_CPP_BUILD_TESTS OFF CACHE BOOL "")
 add_subdirectory(yaml-cpp)
+
+if (WIN32)
+	add_subdirectory(D3D12MemoryAllocator)
+endif()

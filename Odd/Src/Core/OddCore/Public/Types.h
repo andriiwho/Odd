@@ -69,7 +69,7 @@ namespace Odd
     template <typename T, typename... Args>
     SharedPtr<T> MakeShared(Args&&... args)
     {
-        return std::allocate_shared<T>(DefaultSTDAllocator{}, std::forward<Args>(args)...);
+        return std::allocate_shared<T>(DefaultSTDAllocator<T>{}, std::forward<Args>(args)...);
     }
 
     template <typename T, typename Allocator = DefaultSTDAllocator<T>, typename... Args>

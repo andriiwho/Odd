@@ -2,6 +2,7 @@
 
 #include "OddCore.h"
 #include "RootObj.h"
+#include "ObjPtr.h"
 #include "OddPlatformWindow.h"
 #include "RHIDevice.h"
 #include "WeakObjPtr.h"
@@ -29,7 +30,7 @@ namespace Odd
         WeakObjPtr<IWindow> GetMainWindow() const { return MainWindow; }
 
     protected:
-        UniquePtr<RHIDevice> Device{};
+        ObjPtr<RHIDevice> Device{};
         WeakObjPtr<IWindow>   MainWindow{};
     };
 

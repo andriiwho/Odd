@@ -49,6 +49,14 @@ namespace Odd
             return Get<T>(path).value_or(std::forward<T>(defaultValue));
         }
 
+        template <typename T>
+        T GetRequired(std::string_view path) const
+        {
+            auto val = Get<T>(path);
+            oddValidate(val.has_value());
+            return val.value();
+        }
+
     private:
         YAML::Node                LoadConfigFile(const std::string& file);
         std::optional<YAML::Node> GetWithDottedPath(std::string_view path) const;
@@ -65,5 +73,6 @@ namespace Odd
     } // namespace Internal
 } // namespace Odd
 
-#define ODD_CONF(type, name) Odd::GConfig->Get<type>(name);
+#define ODD_CONF(type, name) Odd::GConfig->Get<type>(name)
+#define ODD_CONF_REQUIRED(type, name) Odd::GConfig->GetRequired<type>(name)
 #define ODD_CONF_OR(type, name, def) Odd::GConfig->Get<type>(name, def)

@@ -16,11 +16,11 @@ namespace Odd
         // or by the parent's Release/ForceExpire calls, but we ensure cleanup here as well
         
         // Remove from parent if we're still attached
-        if (m_Parent)
+       /* if (m_Parent)
         {
             m_Parent->Detach(this);
         }
-        
+        */
         // Children should already be cleared by MarkChildrenExpired,
         // but we clear again as a safety measure
         m_Children.clear();
