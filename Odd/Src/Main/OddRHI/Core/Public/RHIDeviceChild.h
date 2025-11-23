@@ -10,11 +10,19 @@ namespace Odd
     {
         CommandQueue,
         SwapChain,
+        CommandContext,
+        Buffer,
+        Image,
+        BufferView,
+        RenderTargetView,
+        UnorderedAccessView,
+        ShaderResourceView,
     };
 
     class RHIDeviceChild : public RootObj
     {
         ODD_ROOT_OBJECT(RHIDeviceChild);
+
     public:
         RHIDeviceChild(RHIDevice* device, RHIDeviceChildType type);
 

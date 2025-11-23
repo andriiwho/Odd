@@ -1,5 +1,6 @@
 #pragma once
 
+#include "NullPrefix.h"
 #include "RHISwapChain.h"
 
 namespace Odd

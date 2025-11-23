@@ -5,7 +5,7 @@
 
 namespace Odd::D3D12
 {
-    class D3D12Device final : public NullDevice
+    class D3D12Device final : public ODD_NULL_PREFIX(Device)
     {
     public:
         D3D12Device();

@@ -347,4 +347,30 @@ namespace Odd
             return true; // All instances are interchangeable (stateless allocator)
         }
     };
+
+    // --------------------------------------------------------------------------------
+    // Arena allocator
+    // --------------------------------------------------------------------------------
+    class LinearAllocator
+    {
+    public:
+        explicit LinearAllocator(size_t size = 0);
+        ~LinearAllocator();
+
+        LinearAllocator(const LinearAllocator&) = delete;
+        LinearAllocator& operator=(const LinearAllocator&) = delete;
+
+        LinearAllocator(LinearAllocator&&) noexcept = delete;
+        LinearAllocator& operator=(LinearAllocator&&) noexcept = delete;
+
+        void* Allocate(size_t size);
+        void  Reset();
+        void  ResetAndResize(size_t size);
+
+    private:
+        uint8_t* m_Memory{};
+        size_t   m_Size{};
+        size_t   m_Capacity{};
+    };
+
 } // namespace Odd

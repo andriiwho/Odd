@@ -55,7 +55,17 @@ namespace Odd
         RootObj* GetRoot() const;
         RootObj* GetLastChild() const;
 
-        bool IsParentOf(RootObj* obj) const;
+        bool            IsParentOf(RootObj* obj) const;
+        inline RootObj* GetParent() const { return m_Parent; }
+
+        // This function uses RTTI, which is not the fastest thing ever.
+        // Please use with care and preferably only in debugging context.
+        template <typename T>
+        void EnsureParentType()
+        {
+            T* castedParentType = dcast(T*, GetParent());
+            oddValidateMsg(castedParentType != nullptr, "Parent type is not '{}'", typeid(T).name());
+        }
 
     private:
         void MarkChildrenExpired();
@@ -64,7 +74,7 @@ namespace Odd
         Internal::RootObjectID     m_RootObjectID;
 
         // Child/Parent relationship system.
-        RootObj* m_Parent{};
+        RootObj*         m_Parent{};
         Vector<RootObj*> m_Children{};
     };
 

@@ -4,7 +4,7 @@
 
 namespace Odd::D3D12
 {
-    void Odd::D3D12::D3D12DeviceManager::CreateWindowAndDevice(const PlatformWindowCreateInfo& createInfo)
+    void D3D12DeviceManager::CreateWindowAndDevice(const PlatformWindowCreateInfo& createInfo)
     {
         ODD_LOG_INFO("Initializing window and D3D12 device.");
 

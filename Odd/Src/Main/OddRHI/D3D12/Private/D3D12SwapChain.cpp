@@ -6,7 +6,7 @@ namespace Odd::D3D12
 {
 
     D3D12SwapChain::D3D12SwapChain(RHIDevice* device, const SwapChainCreateInfo& createInfo)
-        : NullSwapChain(device, createInfo)
+        : ODD_NULL_PREFIX(SwapChain)(device, createInfo)
     {
         oddValidate(createInfo.AssociatedWindow.IsValid());
         oddValidate(createInfo.MinImageCount > 0);

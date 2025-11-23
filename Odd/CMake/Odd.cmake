@@ -5,8 +5,21 @@
 #
 # All modules are static libraries by default.
 
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/Binaries)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/Binaries)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/Binaries/Archive)
+
 # Option to enable/disable automatic PCH generation
 option(ODD_ENABLE_PCH "Enable automatic precompiled header generation for modules" ON)
+
+function(Odd_SetBuildTypeMacro targetName)
+	target_compile_definitions(${targetName} PRIVATE 
+		$<$<CONFIG:Debug>:ODD_DEBUG_BUILD=1>
+		$<$<CONFIG:RelWithDebInfo>:ODD_DEVELOPMENT_BUILD=1>
+		$<$<CONFIG:Release>:ODD_DISTRIBUTION_BUILD=1>
+		$<$<CONFIG:MinSizeRel>:ODD_DISTRIBUTION_BUILD=1>
+	)
+endfunction()
 
 # Function to scan source files and generate a precompiled header
 function(Odd_GeneratePrecompiledHeader target_name)
@@ -316,6 +329,7 @@ macro(Odd_CreateModule module_name)
 	
 	# Generate and apply precompiled header
 	Odd_GeneratePrecompiledHeader(${module_name})
+	Odd_SetBuildTypeMacro(${module_name})
 endmacro()
 
 macro(Odd_CreateExecutable exe_name)
@@ -335,6 +349,7 @@ macro(Odd_CreateExecutable exe_name)
 	
 	# Generate and apply precompiled header
 	Odd_GeneratePrecompiledHeader(${exe_name})
+	Odd_SetBuildTypeMacro(${exe_name})
 endmacro()
 
 # This should be run when configuring the project.

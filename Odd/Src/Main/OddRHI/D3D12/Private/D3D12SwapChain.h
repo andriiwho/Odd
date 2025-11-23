@@ -5,7 +5,7 @@
 
 namespace Odd::D3D12
 {
-    class D3D12SwapChain final : public NullSwapChain
+    class D3D12SwapChain final : public ODD_NULL_PREFIX(SwapChain)
     {
     public:
         D3D12SwapChain(RHIDevice* device, const SwapChainCreateInfo& createInfo);

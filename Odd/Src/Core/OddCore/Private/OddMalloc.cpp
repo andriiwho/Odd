@@ -1143,4 +1143,43 @@ namespace Odd
         }
     }
 
+    LinearAllocator::LinearAllocator(size_t size)
+        : m_Capacity(size)
+    {
+        if (m_Capacity > 0)
+        {
+            m_Memory = scast(uint8_t*, OddMalloc(m_Capacity));
+            oddAssert(m_Memory != nullptr);
+        }
+    }
+
+    void* LinearAllocator::Allocate(size_t size)
+    {
+        oddAssert((m_Size + size) <= m_Capacity);
+        void* outMemory = m_Memory + m_Size;
+        m_Size += size;
+        return outMemory;
+    }
+
+    void LinearAllocator::Reset()
+    {
+        m_Size = 0;
+    }
+
+    void LinearAllocator::ResetAndResize(size_t size)
+    {
+        m_Size = 0;
+        if (size == 0 || size <= m_Capacity)
+        {
+            return;
+        }
+
+        m_Memory = scast(uint8_t*, OddRealloc(m_Memory, size));
+    }
+
+    LinearAllocator::~LinearAllocator()
+    {
+        OddFree(m_Memory);
+    }
+
 } // namespace Odd

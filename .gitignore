@@ -1,3 +1,9 @@
 .vs/
 Todo.md
 *.sln
+*.vcxproj
+*.vcxproj.*
+CMakeFiles/
+CMakeCache.txt
+PCH/
+INSTALL.dir

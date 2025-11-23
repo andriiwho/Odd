@@ -1,5 +1,6 @@
 #pragma once
 
+#include "NullPrefix.h"
 #include "RHIDeviceManager.h"
 
 namespace Odd

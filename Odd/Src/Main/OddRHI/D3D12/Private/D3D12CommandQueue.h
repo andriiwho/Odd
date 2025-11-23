@@ -7,7 +7,7 @@ namespace Odd::D3D12
 {
     class D3D12Device;
 
-    class D3D12CommandQueue final : public NullCommandQueue
+    class D3D12CommandQueue final : public ODD_NULL_PREFIX(CommandQueue)
     {
     public:
         D3D12CommandQueue(RHIDevice* device, RHICommandQueueType queueType);
