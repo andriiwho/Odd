@@ -9,6 +9,14 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/Binaries)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/Binaries)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/Binaries/Archive)
 
+if (MSVC)
+	add_compile_options(/MP) # Enable multi-processor compilation
+endif()
+
+macro(Odd_ModuleFolder moduleName moduleFolder)
+	set_target_properties(${moduleName} PROPERTIES FOLDER ${moduleFolder})
+endmacro()
+
 # Option to enable/disable automatic PCH generation
 option(ODD_ENABLE_PCH "Enable automatic precompiled header generation for modules" ON)
 
@@ -319,6 +327,7 @@ macro(Odd_CreateModule module_name)
 		${CMAKE_CURRENT_SOURCE_DIR}/Private/*.h 
 		${CMAKE_CURRENT_SOURCE_DIR}/Private/*.cpp)
 	target_sources(${module_name} PRIVATE ${SOURCE_FILES})
+	source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCE_FILES})
 	target_include_directories(${module_name} 
 		PUBLIC 
 			${CMAKE_CURRENT_SOURCE_DIR}/Public 
@@ -330,6 +339,7 @@ macro(Odd_CreateModule module_name)
 	# Generate and apply precompiled header
 	Odd_GeneratePrecompiledHeader(${module_name})
 	Odd_SetBuildTypeMacro(${module_name})
+	Odd_ModuleFolder(${module_name} "Modules")
 endmacro()
 
 macro(Odd_CreateExecutable exe_name)
@@ -339,6 +349,7 @@ macro(Odd_CreateExecutable exe_name)
 		${CMAKE_CURRENT_SOURCE_DIR}/Private/*.h 
 		${CMAKE_CURRENT_SOURCE_DIR}/Private/*.cpp)
 	target_sources(${exe_name} PRIVATE ${SOURCE_FILES})
+	source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCE_FILES})
 	target_include_directories(${exe_name} 
 		PUBLIC 
 			${CMAKE_CURRENT_SOURCE_DIR}/Public 
@@ -350,6 +361,7 @@ macro(Odd_CreateExecutable exe_name)
 	# Generate and apply precompiled header
 	Odd_GeneratePrecompiledHeader(${exe_name})
 	Odd_SetBuildTypeMacro(${exe_name})
+	Odd_ModuleFolder(${exe_name} "Executables")
 endmacro()
 
 # This should be run when configuring the project.

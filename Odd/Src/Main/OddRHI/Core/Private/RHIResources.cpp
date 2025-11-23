@@ -2,7 +2,6 @@
 
 namespace Odd
 {
-
     RHIResource::RHIResource(RHIDevice* device, RHIDeviceChildType type)
         : RHIDeviceChild(device, type)
     {
@@ -15,8 +14,6 @@ namespace Odd
         // Validate that the parent is RHIResource, not RHIDevice.
         EnsureParentType<RHIResource>();
 #endif
-
-
     }
 
     RHIBuffer::RHIBuffer(RHIDevice* device, const BufferCreateInfo& createInfo)
@@ -28,6 +25,11 @@ namespace Odd
     RHIImage::RHIImage(RHIDevice* device, const ImageCreateInfo& createInfo)
         : RHIResource(device, RHIDeviceChildType::Image)
         , m_CreateInfo(createInfo)
+    {
+    }
+
+    RHIImageView::RHIImageView(RHIImage* image, RHIDeviceChildType type)
+        : RHIResourceView(image, type)
     {
     }
 

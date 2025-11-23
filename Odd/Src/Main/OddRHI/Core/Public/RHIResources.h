@@ -66,6 +66,9 @@ namespace Odd
     public:
         RHIImageView(RHIImage* image, RHIDeviceChildType type);
 
-    private:
+        inline RHIImage* GetViewedImage() const
+        {
+            return scast(RHIImage*, GetViewedResource());
+        }
     };
 } // namespace Odd

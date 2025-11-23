@@ -1,6 +1,7 @@
 .vs/
 Todo.md
 *.sln
+*.slnx
 *.vcxproj
 *.vcxproj.*
 CMakeFiles/
