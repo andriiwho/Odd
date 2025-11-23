@@ -37,7 +37,7 @@ namespace Odd
 
     void EntryPoint::Main()
     {
-        SharedPtr<RHI> rhi = MakeShared<RHI>();
+        SharedPtr<RHI>      rhi = MakeShared<RHI>();
         WeakObjPtr<IWindow> mainWindow = rhi->GetDeviceManager()->GetMainWindow();
 
         while (true)
@@ -45,6 +45,9 @@ namespace Odd
             GPlatform->PollEventsSimple();
             if (!mainWindow.IsValid())
                 break;
+
+            // Handle presentation of all swap chains
+            rhi->PresentAll();
 
             // Collect "garbage" every frame. In a real application this would be done less frequently.
             // But technically this isn't garbage collection, just cleaning up expired root objects.

@@ -25,17 +25,17 @@ namespace Odd
 
         virtual void CreateWindowAndDevice(const PlatformWindowCreateInfo& createInfo) = 0;
 
-        RHIDevice& GetDevice() { return *Device; }
-        const RHIDevice& GetDevice() const { return *Device; }
+        RHIDevice&          GetDevice() { return *Device; }
+        const RHIDevice&    GetDevice() const { return *Device; }
         WeakObjPtr<IWindow> GetMainWindow() const { return MainWindow; }
 
     protected:
-        ObjPtr<RHIDevice> Device{};
-        WeakObjPtr<IWindow>   MainWindow{};
+        ObjPtr<RHIDevice>   Device{};
+        WeakObjPtr<IWindow> MainWindow{};
     };
 
     extern RHIDeviceManager* GRHIDeviceManager;
 
     RHIDeviceManager* InitRHIDeviceManager();
-    
+
 } // namespace Odd

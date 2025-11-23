@@ -3,6 +3,7 @@
 #include "RootObj.h"
 
 #include "RHICommandQueue.h"
+#include "RHISwapChain.h"
 
 namespace Odd
 {
@@ -10,5 +11,6 @@ namespace Odd
     {
     public:
         virtual RHICommandQueue* CreateCommandQueue(RHICommandQueueType type) = 0;
+        virtual RHISwapChain*    CreateSwapChain(const SwapChainCreateInfo& createInfo) = 0;
     };
 } // namespace Odd

@@ -1,0 +1,3 @@
+Odd_CreateModule(OddNullRHI)
+
+target_link_libraries(OddNullRHI PUBLIC OddRHICore OddCore)

@@ -1,11 +1,11 @@
 #pragma once
 
-#include "RHIDevice.h"
+#include "NullDevice.h"
 #include "OddD3D12.h"
 
 namespace Odd::D3D12
 {
-    class D3D12Device final : public RHIDevice
+    class D3D12Device final : public NullDevice
     {
     public:
         D3D12Device();
@@ -21,6 +21,7 @@ namespace Odd::D3D12
         inline IDXGIFactory6* GetFactoryNativeHandle() const { return m_Factory.Get(); }
 
         RHICommandQueue* CreateCommandQueue(RHICommandQueueType type) override;
+        RHISwapChain*    CreateSwapChain(const SwapChainCreateInfo& createInfo) override;
 
     private:
         ComPtr<IDXGIFactory6> m_Factory{};

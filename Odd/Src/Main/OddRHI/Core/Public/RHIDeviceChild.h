@@ -9,10 +9,12 @@ namespace Odd
     enum class RHIDeviceChildType
     {
         CommandQueue,
+        SwapChain,
     };
 
     class RHIDeviceChild : public RootObj
     {
+        ODD_ROOT_OBJECT(RHIDeviceChild);
     public:
         RHIDeviceChild(RHIDevice* device, RHIDeviceChildType type);
 

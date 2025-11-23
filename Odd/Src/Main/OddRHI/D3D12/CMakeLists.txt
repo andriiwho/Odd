@@ -4,10 +4,14 @@ set(AGILITY_SDK_DIR "${ODD_THIRD_PARTY_DIR}/AgilitySDK" CACHE STRING "" FORCE)
 
 target_include_directories(OddD3D12RHI PRIVATE ${AGILITY_SDK_DIR}/Include)
 target_include_directories(OddD3D12RHI PRIVATE ${AGILITY_SDK_DIR}/Include/d3dx12)
-target_link_libraries(OddD3D12RHI PRIVATE 
-	OddRHICore
-	d3d12
-	dxgi)
+target_link_libraries(OddD3D12RHI 
+	PUBLIC
+		OddRHICore
+		OddNullRHI
+	PRIVATE
+		d3d12
+		dxgi
+)
 target_sources(OddD3D12RHI 
 	PRIVATE 
 		${AGILITY_SDK_DIR}/Src/d3dx12/d3dx12_property_format_table.cpp)

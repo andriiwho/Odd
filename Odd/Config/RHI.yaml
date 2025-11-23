@@ -2,3 +2,5 @@ Debug:
   Enable: true
   GPU: true
   SyncQueueValidation: true
+VSync:
+  Enabled: true  

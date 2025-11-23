@@ -5,7 +5,7 @@
 namespace Odd::D3D12
 {
     D3D12CommandQueue::D3D12CommandQueue(RHIDevice* device, RHICommandQueueType queueType)
-        : RHICommandQueue(device, queueType)
+        : NullCommandQueue(device, queueType)
         , m_D3D12Device(scast(D3D12Device*, device))
     {
         D3D12_COMMAND_QUEUE_DESC desc{

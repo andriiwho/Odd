@@ -17,6 +17,12 @@ function(Odd_GeneratePrecompiledHeader target_name)
 	# Get all source files from the target
 	get_target_property(SOURCE_FILES ${target_name} SOURCES)
 	
+	# Check if we got any source files
+	if(NOT SOURCE_FILES OR SOURCE_FILES STREQUAL "SOURCE_FILES-NOTFOUND")
+		message(STATUS "[PCH] Skipped ${target_name} (no source files found)")
+		return()
+	endif()
+	
 	# List of common standard library headers to check for
 	set(STD_HEADERS
 		"<algorithm>"
@@ -134,14 +140,37 @@ function(Odd_GeneratePrecompiledHeader target_name)
 		"<fmt/chrono.h>"
 	)
 	
+	# Add OddCore headers (internal framework headers that should be precompiled)
+	set(ODDCORE_HEADERS
+		"\"OddCore.h\""
+		"\"Macros.h\""
+		"\"Types.h\""
+		"\"OddMalloc.h\""
+		"\"OddWaysToCrash.h\""
+		"\"Helpers.h\""
+		"\"Logging.h\""
+		"\"OddConfig.h\""
+		"\"RootObj.h\""
+		"\"WeakObjPtr.h\""
+		"\"SharedPtr.h\""
+	)
+	
 	# Create a set to track which headers are found
 	set(FOUND_HEADERS)
+	
+	# Get the source directory for the target to resolve relative paths
+	get_target_property(TARGET_SOURCE_DIR ${target_name} SOURCE_DIR)
 	
 	# Scan all source files
 	foreach(SOURCE_FILE ${SOURCE_FILES})
 		# Only scan .cpp and .h files
 		get_filename_component(FILE_EXT ${SOURCE_FILE} EXT)
 		if(FILE_EXT STREQUAL ".cpp" OR FILE_EXT STREQUAL ".h")
+			# Resolve the full path if it's relative
+			if(NOT IS_ABSOLUTE ${SOURCE_FILE})
+				set(SOURCE_FILE "${TARGET_SOURCE_DIR}/${SOURCE_FILE}")
+			endif()
+			
 			# Read the file
 			if(EXISTS ${SOURCE_FILE})
 				file(READ ${SOURCE_FILE} FILE_CONTENTS)
@@ -162,6 +191,15 @@ function(Odd_GeneratePrecompiledHeader target_name)
 				foreach(HEADER ${THIRD_PARTY_HEADERS})
 					string(REPLACE "<" "\\<" HEADER_REGEX ${HEADER})
 					string(REPLACE ">" "\\>" HEADER_REGEX ${HEADER_REGEX})
+					
+					if(FILE_CONTENTS MATCHES "#include[ \t]+${HEADER_REGEX}")
+						list(APPEND FOUND_HEADERS ${HEADER})
+					endif()
+				endforeach()
+				
+				# Check for OddCore headers
+				foreach(HEADER ${ODDCORE_HEADERS})
+					string(REPLACE "\"" "\\\"" HEADER_REGEX ${HEADER})
 					
 					if(FILE_CONTENTS MATCHES "#include[ \t]+${HEADER_REGEX}")
 						list(APPEND FOUND_HEADERS ${HEADER})
@@ -194,11 +232,15 @@ function(Odd_GeneratePrecompiledHeader target_name)
 		# Separate standard library and third-party headers
 		set(STD_FOUND_LIST)
 		set(THIRD_PARTY_FOUND_LIST)
+		set(ODDCORE_FOUND_LIST)
 		
 		foreach(HEADER ${FOUND_HEADERS})
 			list(FIND THIRD_PARTY_HEADERS ${HEADER} IS_THIRD_PARTY)
+			list(FIND ODDCORE_HEADERS ${HEADER} IS_ODDCORE)
 			if(IS_THIRD_PARTY GREATER -1)
 				list(APPEND THIRD_PARTY_FOUND_LIST ${HEADER})
+			elseif(IS_ODDCORE GREATER -1)
+				list(APPEND ODDCORE_FOUND_LIST ${HEADER})
 			else()
 				list(APPEND STD_FOUND_LIST ${HEADER})
 			endif()
@@ -219,7 +261,19 @@ function(Odd_GeneratePrecompiledHeader target_name)
 			foreach(HEADER ${THIRD_PARTY_FOUND_LIST})
 				set(PCH_CONTENT "${PCH_CONTENT}#include ${HEADER}\n")
 			endforeach()
+			set(PCH_CONTENT "${PCH_CONTENT}\n")
 		endif()
+		
+		# Add OddCore headers
+		if(ODDCORE_FOUND_LIST)
+			set(PCH_CONTENT "${PCH_CONTENT}// OddCore Framework Headers\n")
+			foreach(HEADER ${ODDCORE_FOUND_LIST})
+				set(PCH_CONTENT "${PCH_CONTENT}#include ${HEADER}\n")
+			endforeach()
+		endif()
+		
+		# Count headers for status message
+		list(LENGTH FOUND_HEADERS HEADER_COUNT)
 		
 		# Write PCH file only if content changed (to avoid unnecessary rebuilds)
 		set(WRITE_PCH TRUE)
@@ -232,10 +286,9 @@ function(Odd_GeneratePrecompiledHeader target_name)
 		
 		if(WRITE_PCH)
 			file(WRITE ${PCH_FILE} ${PCH_CONTENT})
-			
-			# Count headers for status message
-			list(LENGTH FOUND_HEADERS HEADER_COUNT)
 			message(STATUS "[PCH] Generated for ${target_name} (${HEADER_COUNT} headers)")
+		else()
+			message(STATUS "[PCH] Up-to-date for ${target_name} (${HEADER_COUNT} headers)")
 		endif()
 		
 		# Apply PCH to target

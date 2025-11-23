@@ -45,5 +45,22 @@
       "displayName": "Distribution",
       "inherits": [ "distribution-base" ]
     }
+  ],
+  "buildPresets": [
+    {
+      "name": "dev-build",
+      "displayName": "Development",
+      "configurePreset": "dev-current"
+    },
+    {
+      "name": "debug-build",
+      "displayName": "Debug",
+      "configurePreset": "debug-current"
+    },
+    {
+      "name": "dist-build",
+      "displayName": "Distribution",
+      "configurePreset": "distribution-current"
+    }
   ]
 }
