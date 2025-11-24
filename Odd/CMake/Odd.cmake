@@ -17,6 +17,13 @@ macro(Odd_ModuleFolder moduleName moduleFolder)
 	set_target_properties(${moduleName} PROPERTIES FOLDER ${moduleFolder})
 endmacro()
 
+macro(Odd_CreateConfigModule moduleName)
+	file(GLOB_RECURSE SOURCE_FILES 
+		${CMAKE_CURRENT_SOURCE_DIR}/*.yaml)
+	add_custom_target(${moduleName} SOURCES ${SOURCE_FILES})
+	Odd_ModuleFolder(${moduleName} "Config")
+endmacro()
+
 # Option to enable/disable automatic PCH generation
 option(ODD_ENABLE_PCH "Enable automatic precompiled header generation for modules" ON)
 

@@ -10,5 +10,6 @@ namespace Odd
     public:
         virtual RHICommandQueue* CreateCommandQueue(RHICommandQueueType type) override;
         virtual RHISwapChain*    CreateSwapChain(const SwapChainCreateInfo& createInfo) override;
+        virtual RHICommandContext* CreateCommandContext(RHICommandQueueType queueType) override;
 	};
 }

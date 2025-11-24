@@ -4,6 +4,7 @@
 
 #include "RHICommandQueue.h"
 #include "RHISwapChain.h"
+#include "RHICommandContext.h"
 
 namespace Odd
 {
@@ -12,5 +13,6 @@ namespace Odd
     public:
         virtual RHICommandQueue* CreateCommandQueue(RHICommandQueueType type) = 0;
         virtual RHISwapChain*    CreateSwapChain(const SwapChainCreateInfo& createInfo) = 0;
+        virtual RHICommandContext* CreateCommandContext(RHICommandQueueType queueType) = 0;
     };
 } // namespace Odd

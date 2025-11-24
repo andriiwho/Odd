@@ -1,6 +1,7 @@
 Debug:
   Enable: true
-  GPU: true
-  SyncQueueValidation: true
+  GPU: false
+  SyncQueueValidation: false
 VSync:
   Enabled: true  
+NumFramesInFlight: 3

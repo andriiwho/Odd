@@ -22,6 +22,7 @@ namespace Odd::D3D12
 
         RHICommandQueue* CreateCommandQueue(RHICommandQueueType type) override;
         RHISwapChain*    CreateSwapChain(const SwapChainCreateInfo& createInfo) override;
+        RHICommandContext* CreateCommandContext(RHICommandQueueType queueType) override;
 
     private:
         ComPtr<IDXGIFactory6> m_Factory{};

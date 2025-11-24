@@ -7,4 +7,6 @@ set(ODD_THIRD_PARTY_DIR ${CMAKE_SOURCE_DIR}/Odd/ThirdParty CACHE STRING "")
 
 add_subdirectory(Odd/ThirdParty)
 add_subdirectory(Odd/Src)
+add_subdirectory(Odd/Config)
+
 add_subdirectory(Even/Src)

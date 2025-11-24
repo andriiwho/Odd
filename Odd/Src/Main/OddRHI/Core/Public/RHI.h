@@ -3,6 +3,7 @@
 #include "RHIDeviceManager.h"
 #include "RHICommandQueue.h"
 #include "WeakObjPtr.h"
+#include "RHICommandContext.h"
 
 namespace Odd
 {
@@ -27,5 +28,10 @@ namespace Odd
         WeakObjPtr<RHICommandQueue>                               m_GraphicsCommandQueue{};
         Vector<WeakObjPtr<RHISwapChain>>                          m_SwapChains;
         HashMap<Internal::RootObjectID, WeakObjPtr<RHISwapChain>> m_SwapChainsPerWindow;
+
+        Vector<WeakObjPtr<RHICommandContext>> m_CommandContexts;
+        uint32_t                              m_CfgNumFramesPerFlight = 3;
+
+        void PrepareCommandContexts();
     };
 } // namespace Odd

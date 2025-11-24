@@ -26,7 +26,7 @@ namespace Odd::D3D12
             .Scaling = DXGI_SCALING_STRETCH,
             .SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD,
             .AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED,
-            .Flags = createInfo.EnableVSync ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0u,
+            .Flags = !createInfo.EnableVSync ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0u,
         };
 
         if (auto pFactory = d3d12Device->GetFactoryNativeHandle())

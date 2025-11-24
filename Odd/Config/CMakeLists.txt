@@ -1,0 +1,1 @@
+Odd_CreateConfigModule(OddConfig)

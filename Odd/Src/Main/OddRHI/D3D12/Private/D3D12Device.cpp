@@ -3,6 +3,7 @@
 
 #include "D3D12CommandQueue.h"
 #include "D3D12SwapChain.h"
+#include "D3D12CommandContext.h"
 
 namespace Odd::D3D12
 {
@@ -101,6 +102,11 @@ namespace Odd::D3D12
     RHISwapChain* D3D12Device::CreateSwapChain(const SwapChainCreateInfo& createInfo)
     {
         return CreateChildObject<D3D12SwapChain>(this, createInfo);
+    }
+
+    RHICommandContext* D3D12Device::CreateCommandContext(RHICommandQueueType queueType)
+    {
+        return CreateChildObject<D3D12CommandContext>(this, queueType);
     }
 
 } // namespace Odd::D3D12

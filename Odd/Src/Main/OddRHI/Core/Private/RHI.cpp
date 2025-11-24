@@ -3,7 +3,6 @@
 
 namespace Odd
 {
-
     RHI::RHI()
         : m_DeviceManager(InitRHIDeviceManager())
     {
@@ -22,6 +21,9 @@ namespace Odd
 
         // Create swapchain for main window
         CreateSwapChain(m_DeviceManager->GetMainWindow());
+
+        m_CfgNumFramesPerFlight = ODD_CONF_OR(uint32_t, "Engine.RHI.NumFramesInFlight", 3u);
+        PrepareCommandContexts();
     }
 
     RHI::~RHI()
@@ -65,6 +67,19 @@ namespace Odd
             {
                 swapChain->Present();
             }
+        }
+    }
+
+    void RHI::PrepareCommandContexts()
+    {
+        oddValidate(m_CfgNumFramesPerFlight > 0);
+        m_CommandContexts.reserve(m_CfgNumFramesPerFlight);
+
+        ODD_LOG_TRACE("Creating {} in-flight contexts per queue.", m_CfgNumFramesPerFlight);
+
+        for (uint32_t index = 0; index < m_CfgNumFramesPerFlight; ++index)
+        {
+            m_CommandContexts.push_back(m_Device->CreateCommandContext(RHICommandQueueType::Graphics));
         }
     }
 
