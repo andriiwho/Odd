@@ -1,4 +1,5 @@
 #include "NullCommandQueue.h"
+#include "NullRHICommon.h"
 
 namespace Odd
 {
@@ -6,4 +7,10 @@ namespace Odd
         : RHICommandQueue(device, type)
     {
     }
+
+    void NullCommandQueue::Flush()
+    {
+        ODD_WARN_NULL_RHI();
+    }
+
 }

@@ -9,5 +9,7 @@ namespace Odd
 	{
     public:
         NullCommandQueue(RHIDevice* device, RHICommandQueueType type);
+
+		virtual void Flush() override;
 	};
 }

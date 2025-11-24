@@ -19,6 +19,8 @@ namespace Odd
 
         inline RHICommandQueueType GetQueueType() const { return m_QueueType; }
 
+        virtual void Flush() = 0;
+
     private:
         RHICommandQueueType m_QueueType{};
     };
