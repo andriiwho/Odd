@@ -79,4 +79,48 @@ namespace Odd::D3D12
         }
 #endif
     }
+
+    void* D3D12Buffer::Map(bool enableRead)
+    {
+#ifndef ODD_DISTRIBUTION_BUILD
+        if (GetCreateInfo().Flags.Staging == true && enableRead)
+        {
+            ODD_LOG_WARNING("Mapping upload buffer for reading may cause performance issues.");
+        }
+#endif
+
+        if (m_MappedData)
+        {
+            // If different values of enableRead from previous call, need to remap the buffer.
+            if (m_CachedEnableRead != enableRead)
+            {
+                Unmap();
+            }
+            else
+            {
+                return m_MappedData;
+            }
+        }
+
+        // We only need to pass this in if the reading is disabled.
+        // Passing these values means that the resource is write-only.
+        // If enableRead is specified to true then pass nullptr to read the entire resource.
+        D3D12_RANGE readRange = {
+            .Begin = 0,
+            .End = 0,
+        };
+        oddHrValidate(m_Resource->Map(0, enableRead ? nullptr : &readRange, &m_MappedData));
+        m_CachedEnableRead = enableRead;
+        return m_MappedData;
+    }
+
+    void D3D12Buffer::Unmap()
+    {
+        if (m_MappedData)
+        {
+            m_Resource->Unmap(0, nullptr);
+            m_MappedData = nullptr;
+        }
+    }
+
 } // namespace Odd::D3D12
