@@ -267,6 +267,12 @@ namespace Odd
     void  OddFree(void* ptr);
     void* OddRealloc(void* ptr, size_t newSize);
 
+    template<typename T>
+    T* OddCalloc(size_t count)
+    {
+        return static_cast<T*>(OddMalloc(count * sizeof(T)));
+    }
+
     // Get the global memory pool instance
     MemoryPool* GetGlobalMemoryPool();
 

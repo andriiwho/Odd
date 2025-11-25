@@ -36,6 +36,15 @@ namespace Odd
         return outString;
     }
 
+    inline WideString StringToWide(const String& str)
+    {
+        wchar_t* buffer = OddCalloc<wchar_t>(str.size());
+        mbstowcs(buffer, str.c_str(), str.size());
+        WideString out(buffer);
+        OddFree(buffer);
+        return out;
+    }
+
     using StringView = std::string_view;
 
     template <typename Key, typename T, typename Hash = std::hash<Key>, typename KeyEqual = std::equal_to<Key>, typename Allocator = DefaultSTDAllocator<std::pair<const Key, T>>>
