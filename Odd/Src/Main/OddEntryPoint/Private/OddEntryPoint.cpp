@@ -41,6 +41,7 @@ namespace Odd
         WeakObjPtr<IWindow> mainWindow = rhi->GetDeviceManager()->GetMainWindow();
 
         RHIBuffer* buffer = rhi->GetDevice()->CreateBuffer({
+            .DebugName = "TestBuffer",
             .SizeInBytes = 1024,
             .Flags = {
                 .Staging = true,

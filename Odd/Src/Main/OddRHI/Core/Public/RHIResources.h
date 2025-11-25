@@ -33,9 +33,11 @@ namespace Odd
 
     struct RHIBufferCreateInfo
     {
+        String DebugName{};
         size_t SizeInBytes{};
         struct BufferFlags
         {
+            bool ConstantBuffer : 1 = false;
             bool ShaderResource : 1 = false;
             bool UnorderedAccess : 1 = false;
             bool Staging : 1 = false;
