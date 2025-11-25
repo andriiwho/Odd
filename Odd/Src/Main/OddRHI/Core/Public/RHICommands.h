@@ -1,7 +1,6 @@
 #pragma once
 
 #include "OddMalloc.h"
-#include "RHIDeviceChild.h"
 
 namespace Odd
 {

@@ -46,17 +46,15 @@ namespace Odd
             if (!mainWindow.IsValid())
                 break;
 
+            RHICommandList& cmd = rhi->GetCommandListForGraphics();
+
+            // Submit command lists
+            rhi->EndFrameAndSubmit();
+
             // Handle presentation of all swap chains
             rhi->PresentAll();
 
-            // Collect "garbage" every frame. In a real application this would be done less frequently.
-            // But technically this isn't garbage collection, just cleaning up expired root objects.
-            // And since they use internal allocator, which doesn't return memory to the OS immediately,
-            // this is a lightweight operation.
-            // So we can afford to do this every frame.
-            // So yeah, flush expired root objects every frame.
-            // Just call the function.
-            // Here we go:
+            // Collect "garbage" every frame.
             Internal::FlushExpiredRootObjects();
         }
     }

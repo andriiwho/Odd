@@ -45,4 +45,20 @@ namespace Odd::D3D12
         }
     }
 
+    void D3D12CommandQueue::SubmitCommandLists(ID3D12CommandList* const* cmdLists, uint64_t numLists, ID3D12Fence* fence, uint64_t fenceValue)
+    {
+        if (numLists == 0)
+            return;
+
+        // Execute commands
+        m_CommandQueue->ExecuteCommandLists(scast(UINT, numLists), cmdLists);
+        if (fence == nullptr)
+            return;
+        
+        if (fence->GetCompletedValue() < fenceValue)
+        {
+            oddHrValidate(m_CommandQueue->Signal(fence, fenceValue));
+        }
+    }
+
 } // namespace Odd::D3D12

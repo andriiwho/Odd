@@ -3,9 +3,12 @@
 
 namespace Odd
 {
+    RHI* GRHI = nullptr;
+
     RHI::RHI()
         : m_DeviceManager(InitRHIDeviceManager())
     {
+        GRHI = this;
         PlatformWindowCreateInfo windowCreateInfo = {
             .Title = ODD_CONF_REQUIRED(String, "Engine.MainWindow.Title"),
             .Size = {
@@ -24,6 +27,9 @@ namespace Odd
 
         m_CfgNumFramesPerFlight = ODD_CONF_OR(uint32_t, "Engine.RHI.NumFramesInFlight", 3u);
         PrepareCommandContexts();
+
+        // Begin recording the first context
+        GetCurrentCommandContext().BeginRecording();
     }
 
     RHI::~RHI()
@@ -68,6 +74,28 @@ namespace Odd
                 swapChain->Present();
             }
         }
+    }
+
+    void RHI::EndFrameAndSubmit()
+    {
+        RHICommandContext& cmdCtx = GetCurrentCommandContext();
+        cmdCtx.EndRecording();
+
+        cmdCtx.Submit(*m_GraphicsCommandQueue.Get());
+
+        // Set frame in flight index.
+        m_CurrentFrameInFlight = (m_CurrentFrameInFlight + 1) % m_CfgNumFramesPerFlight;
+        GetCurrentCommandContext().BeginRecording();
+    }
+
+    RHICommandContext& RHI::GetCurrentCommandContext()
+    {
+        return *m_CommandContexts.at(m_CurrentFrameInFlight).Get();
+    }
+
+    RHICommandList& RHI::GetCommandListForGraphics()
+    {
+        return GetCurrentCommandContext().GetCommandList();
     }
 
     void RHI::PrepareCommandContexts()

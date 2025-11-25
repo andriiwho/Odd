@@ -21,6 +21,10 @@ namespace Odd
         void PresentSwapChain(WeakObjPtr<IWindow> window);
         void PresentAll();
 
+        void EndFrameAndSubmit();
+
+        RHICommandList&    GetCommandListForGraphics();
+
     private:
         UniquePtr<RHIDeviceManager> m_DeviceManager{};
 
@@ -31,7 +35,11 @@ namespace Odd
 
         Vector<WeakObjPtr<RHICommandContext>> m_CommandContexts;
         uint32_t                              m_CfgNumFramesPerFlight = 3;
+        uint32_t                              m_CurrentFrameInFlight{};
 
         void PrepareCommandContexts();
+        RHICommandContext& GetCurrentCommandContext();
     };
+
+    extern RHI* GRHI;
 } // namespace Odd

@@ -16,6 +16,8 @@ namespace Odd::D3D12
         inline ID3D12CommandQueue* GetHandle() const { return m_CommandQueue.Get(); }
         virtual void               Flush() override;
 
+        void SubmitCommandLists(ID3D12CommandList* const* cmdLists, uint64_t numLists, ID3D12Fence* fence, uint64_t fenceValue);
+
     private:
         D3D12Device*               m_D3D12Device{};
         ComPtr<ID3D12CommandQueue> m_CommandQueue{};

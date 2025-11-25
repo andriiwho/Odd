@@ -9,5 +9,9 @@ namespace Odd
 	{
     public:
         NullCommandContext(RHIDevice* device, RHICommandQueueType queueType = RHICommandQueueType::Graphics);
+
+		virtual void BeginRecording() override;
+        virtual void EndRecording() override;
+        virtual void Submit(RHICommandQueue& commandQueue) override;
 	};
 }
