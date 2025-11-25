@@ -11,6 +11,7 @@ target_link_libraries(OddD3D12RHI
 	PRIVATE
 		d3d12
 		dxgi
+		D3D12MemoryAllocator
 )
 target_sources(OddD3D12RHI 
 	PRIVATE 

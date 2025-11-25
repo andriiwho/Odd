@@ -31,34 +31,42 @@ namespace Odd
         WeakObjPtr<RHIResource> m_ViewedResource;
     };
 
-    struct BufferCreateInfo
+    struct RHIBufferCreateInfo
     {
+        size_t SizeInBytes{};
+        struct BufferFlags
+        {
+            bool ShaderResource : 1 = false;
+            bool UnorderedAccess : 1 = false;
+            bool Staging : 1 = false;
+            bool Readback : 1 = false;
+        } Flags;
     };
 
     class RHIBuffer : public RHIResource
     {
     public:
-        RHIBuffer(RHIDevice* device, const BufferCreateInfo& createInfo);
+        RHIBuffer(RHIDevice* device, const RHIBufferCreateInfo& createInfo);
 
-        inline const BufferCreateInfo& GetCreateInfo() const { return m_CreateInfo; }
+        inline const RHIBufferCreateInfo& GetCreateInfo() const { return m_CreateInfo; }
 
     private:
-        BufferCreateInfo m_CreateInfo{};
+        RHIBufferCreateInfo m_CreateInfo{};
     };
 
-    struct ImageCreateInfo
+    struct RHIImageCreateInfo
     {
     };
 
     class RHIImage : public RHIResource
     {
     public:
-        RHIImage(RHIDevice* device, const ImageCreateInfo& createInfo);
+        RHIImage(RHIDevice* device, const RHIImageCreateInfo& createInfo);
 
-        inline const ImageCreateInfo& GetCreateInfo() const { return m_CreateInfo; }
+        inline const RHIImageCreateInfo& GetCreateInfo() const { return m_CreateInfo; }
 
     private:
-        ImageCreateInfo m_CreateInfo{};
+        RHIImageCreateInfo m_CreateInfo{};
     };
 
     class RHIImageView : public RHIResourceView

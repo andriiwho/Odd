@@ -4,6 +4,7 @@
 #include "D3D12CommandQueue.h"
 #include "D3D12SwapChain.h"
 #include "D3D12CommandContext.h"
+#include "D3D12Resources.h"
 
 namespace Odd::D3D12
 {
@@ -27,6 +28,7 @@ namespace Odd::D3D12
         }
         SelectAdapter();
         CreateDevice();
+        CreateAllocator();
     }
 
     D3D12Device::~D3D12Device()
@@ -107,6 +109,28 @@ namespace Odd::D3D12
     RHICommandContext* D3D12Device::CreateCommandContext(RHICommandQueueType queueType)
     {
         return CreateChildObject<D3D12CommandContext>(this, queueType);
+    }
+
+    void D3D12Device::CreateAllocator()
+    {
+        D3D12MA::ALLOCATION_CALLBACKS allocCallbacks = {
+            .pAllocate = [](size_t size, size_t, void*) { return OddMalloc(size); },
+            .pFree = [](void* mem, void*) { OddFree(mem); }
+        };
+
+        D3D12MA::ALLOCATOR_DESC allocDesc{
+            .Flags = D3D12MA_RECOMMENDED_ALLOCATOR_FLAGS,
+            .pDevice = m_Device.Get(),
+            .PreferredBlockSize = 0,
+            .pAllocationCallbacks = nullptr,
+            .pAdapter = m_Adapter.Get(),
+        };
+        oddHrValidate(D3D12MA::CreateAllocator(&allocDesc, &m_Allocator));
+    }
+
+    RHIBuffer* D3D12Device::CreateBuffer(const RHIBufferCreateInfo& createInfo)
+    {
+        return CreateChildObject<D3D12Buffer>(this, createInfo);
     }
 
 } // namespace Odd::D3D12

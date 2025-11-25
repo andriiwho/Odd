@@ -16,13 +16,13 @@ namespace Odd
 #endif
     }
 
-    RHIBuffer::RHIBuffer(RHIDevice* device, const BufferCreateInfo& createInfo)
+    RHIBuffer::RHIBuffer(RHIDevice* device, const RHIBufferCreateInfo& createInfo)
         : RHIResource(device, RHIDeviceChildType::Buffer)
         , m_CreateInfo(createInfo)
     {
     }
 
-    RHIImage::RHIImage(RHIDevice* device, const ImageCreateInfo& createInfo)
+    RHIImage::RHIImage(RHIDevice* device, const RHIImageCreateInfo& createInfo)
         : RHIResource(device, RHIDeviceChildType::Image)
         , m_CreateInfo(createInfo)
     {

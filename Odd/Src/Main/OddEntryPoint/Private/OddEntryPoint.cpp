@@ -40,6 +40,13 @@ namespace Odd
         SharedPtr<RHI>      rhi = MakeShared<RHI>();
         WeakObjPtr<IWindow> mainWindow = rhi->GetDeviceManager()->GetMainWindow();
 
+        RHIBuffer* buffer = rhi->GetDevice()->CreateBuffer({
+            .SizeInBytes = 1024,
+            .Flags = {
+                .Staging = true,
+            },
+        });
+
         while (true)
         {
             GPlatform->PollEventsSimple();

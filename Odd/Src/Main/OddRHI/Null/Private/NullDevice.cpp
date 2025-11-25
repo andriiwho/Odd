@@ -3,6 +3,7 @@
 #include "NullRHICommon.h"
 #include "NullSwapChain.h"
 #include "NullCommandContext.h"
+#include "NullResources.h"
 
 namespace Odd
 {
@@ -23,6 +24,12 @@ namespace Odd
     {
         ODD_WARN_NULL_RHI();
         return CreateChildObject<NullCommandContext>(this, queueType);
+    }
+
+    RHIBuffer* NullDevice::CreateBuffer(const RHIBufferCreateInfo& createInfo)
+    {
+        ODD_WARN_NULL_RHI();
+        return CreateChildObject<NullBuffer>(this, createInfo);
     }
 
 }

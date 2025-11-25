@@ -2,6 +2,7 @@
 
 #include "NullDevice.h"
 #include "OddD3D12.h"
+#include "D3D12MemAlloc.h"
 
 namespace Odd::D3D12
 {
@@ -16,22 +17,26 @@ namespace Odd::D3D12
         D3D12Device(D3D12Device&&) noexcept = delete;
         D3D12Device& operator=(D3D12Device&&) noexcept = delete;
 
-        inline ID3D12Device5* GetDeviceNativeHandle() const { return m_Device.Get(); }
-        inline IDXGIAdapter4* GetAdapterNativeHandle() const { return m_Adapter.Get(); }
-        inline IDXGIFactory6* GetFactoryNativeHandle() const { return m_Factory.Get(); }
+        inline ID3D12Device5*      GetDeviceNativeHandle() const { return m_Device.Get(); }
+        inline IDXGIAdapter4*      GetAdapterNativeHandle() const { return m_Adapter.Get(); }
+        inline IDXGIFactory6*      GetFactoryNativeHandle() const { return m_Factory.Get(); }
+        inline D3D12MA::Allocator* GetAllocatorNativeHandle() const { return m_Allocator.Get(); }
 
-        RHICommandQueue* CreateCommandQueue(RHICommandQueueType type) override;
-        RHISwapChain*    CreateSwapChain(const SwapChainCreateInfo& createInfo) override;
+        RHICommandQueue*   CreateCommandQueue(RHICommandQueueType type) override;
+        RHISwapChain*      CreateSwapChain(const SwapChainCreateInfo& createInfo) override;
         RHICommandContext* CreateCommandContext(RHICommandQueueType queueType) override;
+        RHIBuffer*         CreateBuffer(const RHIBufferCreateInfo& createInfo) override;
 
     private:
-        ComPtr<IDXGIFactory6> m_Factory{};
-        ComPtr<IDXGIAdapter4> m_Adapter{};
-        ComPtr<ID3D12Device5> m_Device{};
+        ComPtr<IDXGIFactory6>      m_Factory{};
+        ComPtr<IDXGIAdapter4>      m_Adapter{};
+        ComPtr<ID3D12Device5>      m_Device{};
+        ComPtr<D3D12MA::Allocator> m_Allocator{};
 
         void InitFactory();
         void InitDebugInterface();
         void SelectAdapter();
         void CreateDevice();
+        void CreateAllocator();
     };
 } // namespace Odd::D3D12
