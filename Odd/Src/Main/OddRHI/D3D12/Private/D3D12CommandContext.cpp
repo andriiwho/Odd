@@ -2,9 +2,26 @@
 #include "D3D12Device.h"
 #include "D3D12Types.h"
 #include "D3D12CommandQueue.h"
+#include "D3D12Resources.h"
 
 namespace Odd::D3D12
 {
+    static inline ID3D12Resource* GetNativeRHIResource(RHIResource* resource)
+    {
+        if (!resource)
+            return nullptr;
+
+        switch (resource->GetDeviceChildType())
+        {
+            case RHIDeviceChildType::Buffer:
+                return scast(D3D12Buffer*, resource)->GetResourceNativeHandle();
+            default:
+                break;
+        }
+
+        oddCrash("Unknown resource type.");
+    }
+
     D3D12CommandContext::D3D12CommandContext(RHIDevice* device, RHICommandQueueType queueType /*= RHICommandQueueType::Graphics*/)
         : ODD_NULL_PREFIX(CommandContext)(device, queueType)
         , m_D3D12Device(dcast(D3D12Device*, device))
@@ -78,6 +95,16 @@ namespace Odd::D3D12
         ::WaitForSingleObject(m_FenceEvent, INFINITE);
         ::CloseHandle(m_FenceEvent);
         m_FenceEvent = 0;
+    }
+
+    // Commands
+    void D3D12CommandContext::CMDTransitionResource(RHIResource* resource, const RHIResourceTransitionInfo& transitionInfo)
+    {
+        const auto transition = CD3DX12_RESOURCE_BARRIER::Transition(
+            GetNativeRHIResource(resource),
+            ToD3D12ResouceStates(transitionInfo.StateFrom),
+            ToD3D12ResouceStates(transitionInfo.StateTo));
+        m_CommandList->ResourceBarrier(1, &transition);
     }
 
 } // namespace Odd::D3D12

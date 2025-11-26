@@ -15,8 +15,8 @@ namespace Odd::D3D12
 
         inline ID3D12Resource1* GetResourceNativeHandle() const { return m_Resource.Get(); }
 
-        void* Map(bool enableRead = false);
-        void  Unmap();
+        void* Map(bool enableRead = false) override;
+        void  Unmap() override;
 
     private:
         D3D12Device* m_D3D12Device{};

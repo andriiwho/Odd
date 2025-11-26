@@ -267,11 +267,68 @@ namespace Odd
     void  OddFree(void* ptr);
     void* OddRealloc(void* ptr, size_t newSize);
 
-    template<typename T>
+    template <typename T>
     T* OddCalloc(size_t count)
     {
         return static_cast<T*>(OddMalloc(count * sizeof(T)));
     }
+
+    struct ScopedAlloc
+    {
+        void* Memory{};
+
+        ScopedAlloc() = default;
+
+        ScopedAlloc(void* inMemory)
+            : Memory(inMemory)
+        {
+        }
+
+        ScopedAlloc(size_t size)
+            : Memory(OddMalloc(size))
+        {
+        }
+
+        ~ScopedAlloc()
+        {
+            if (Memory)
+                OddFree(Memory);
+        }
+
+        ScopedAlloc(const ScopedAlloc&) = delete;
+        ScopedAlloc& operator=(const ScopedAlloc&) = delete;
+
+        ScopedAlloc(ScopedAlloc&& other) noexcept
+        {
+            if (Memory)
+                OddFree(Memory);
+            Memory = other.Memory;
+            other.Memory = nullptr;
+        }
+
+        ScopedAlloc& operator=(ScopedAlloc&& other) noexcept
+        {
+            if (Memory)
+                OddFree(Memory);
+            Memory = other.Memory;
+            other.Memory = nullptr;
+            return *this;
+        }
+
+        bool IsValid() const
+        {
+            return Memory != nullptr;
+        }
+
+        void Reset()
+        {
+            if (Memory)
+                OddFree(Memory);
+            Memory = nullptr;
+        }
+
+        inline operator bool() const { return Memory != nullptr; }
+    };
 
     // Get the global memory pool instance
     MemoryPool* GetGlobalMemoryPool();
@@ -372,6 +429,11 @@ namespace Odd
         void* Allocate(size_t size);
         void  Reset();
         void  ResetAndResize(size_t size);
+
+        inline size_t GetCapacity() const
+        {
+            return m_Capacity;
+        }
 
     private:
         uint8_t* m_Memory{};

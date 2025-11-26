@@ -3,10 +3,12 @@
 #include "RHIDeviceChild.h"
 #include "RHICommandQueue.h"
 #include "WeakObjPtr.h"
+#include "RHITypes.h"
 
 namespace Odd
 {
     class RHICommandList;
+    class RHIResource;
 
     class RHICommandContext : public RHIDeviceChild
     {
@@ -25,6 +27,8 @@ namespace Odd
             oddValidate(m_CommandList != nullptr);
             return *m_CommandList;
         }
+
+        virtual void CMDTransitionResource(RHIResource* resource, const RHIResourceTransitionInfo& transitionInfo) = 0;
 
     private:
         RHICommandList*     m_CommandList;

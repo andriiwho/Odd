@@ -1,10 +1,12 @@
 #pragma once
 
 #include "OddMalloc.h"
+#include "RHITypes.h"
 
 namespace Odd
 {
     class RHICommandContext;
+    class RHIResource;
 
     class RHICommand
     {
@@ -25,12 +27,15 @@ namespace Odd
         void BeginRecording(size_t commandPoolCapacity = 0);
         void EndRecording();
 
+        void TransitionResource(RHIResource* resource, const RHIResourceTransitionInfo& info);
+
     private:
         template <typename T>
         T* AllocCmd()
         {
             // Allocate the command
             T* cmd = scast(T*, m_CommandAllocator.Allocate(sizeof(T)));
+            std::construct_at(cmd);
 
             // If we don't have a first command assign it.
             if (m_First == nullptr)
@@ -54,3 +59,5 @@ namespace Odd
         RHICommand*     m_Last{};
     };
 } // namespace Odd
+
+#include "RHICommands.inl"

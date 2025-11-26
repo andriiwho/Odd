@@ -52,6 +52,9 @@ namespace Odd
 
         inline const RHIBufferCreateInfo& GetCreateInfo() const { return m_CreateInfo; }
 
+        virtual void* Map(bool enableRead = false) = 0;
+        virtual void  Unmap() = 0;
+
     private:
         RHIBufferCreateInfo m_CreateInfo{};
     };

@@ -22,6 +22,8 @@ namespace Odd::D3D12
         inline ID3D12CommandList*         GetCommandList() const { return m_CommandList.Get(); }
         inline ID3D12GraphicsCommandList* GetGraphicsCommandList() const { return m_CommandList.Get(); }
 
+        virtual void CMDTransitionResource(RHIResource* resource, const RHIResourceTransitionInfo& transitionInfo) override;
+
     private:
         void WaitForFenceEvent();
 

@@ -7,6 +7,7 @@
 
 #include <filesystem>
 #include "RHI.h"
+#include "RHICommands.h"
 
 namespace Odd
 {
@@ -55,6 +56,16 @@ namespace Odd
                 break;
 
             RHICommandList& cmd = rhi->GetCommandListForGraphics();
+            cmd.TransitionResource(buffer, {
+                                               .StateFrom = RHIResourceState::Common,
+                                               .StateTo = RHIResourceState::GenericRead,
+                                           });
+
+            cmd.TransitionResource(buffer, {
+                                               .StateFrom = RHIResourceState::GenericRead,
+                                               .StateTo = RHIResourceState::Common,
+                                           });
+
 
             // Submit command lists
             rhi->EndFrameAndSubmit();

@@ -1175,6 +1175,11 @@ namespace Odd
         }
 
         m_Memory = scast(uint8_t*, OddRealloc(m_Memory, size));
+        if (m_Memory)
+        {
+            std::memset(m_Memory, 0, m_Capacity);
+        }
+        m_Capacity = size;
     }
 
     LinearAllocator::~LinearAllocator()

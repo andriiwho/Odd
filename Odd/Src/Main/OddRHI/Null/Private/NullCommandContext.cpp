@@ -26,4 +26,9 @@ namespace Odd
         ODD_WARN_NULL_RHI();
     }
 
+    void NullCommandContext::CMDTransitionResource(RHIResource* resource, const RHIResourceTransitionInfo& transitionInfo)
+    {
+        ODD_WARN_NULL_RHI();
+    }
+
 } // namespace Odd

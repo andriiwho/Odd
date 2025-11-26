@@ -331,7 +331,9 @@ macro(Odd_CreateModule module_name)
 	add_library(${module_name} STATIC)
 	file(GLOB_RECURSE SOURCE_FILES 
 		${CMAKE_CURRENT_SOURCE_DIR}/Public/*.h 
+		${CMAKE_CURRENT_SOURCE_DIR}/Public/*.inl 
 		${CMAKE_CURRENT_SOURCE_DIR}/Private/*.h 
+		${CMAKE_CURRENT_SOURCE_DIR}/Private/*.inl 
 		${CMAKE_CURRENT_SOURCE_DIR}/Private/*.cpp)
 	target_sources(${module_name} PRIVATE ${SOURCE_FILES})
 	source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCE_FILES})
@@ -353,7 +355,9 @@ macro(Odd_CreateExecutable exe_name)
 	add_executable(${exe_name})
 	file(GLOB_RECURSE SOURCE_FILES 
 		${CMAKE_CURRENT_SOURCE_DIR}/Public/*.h 
+		${CMAKE_CURRENT_SOURCE_DIR}/Public/*.inl 
 		${CMAKE_CURRENT_SOURCE_DIR}/Private/*.h 
+		${CMAKE_CURRENT_SOURCE_DIR}/Private/*.inl 
 		${CMAKE_CURRENT_SOURCE_DIR}/Private/*.cpp)
 	target_sources(${exe_name} PRIVATE ${SOURCE_FILES})
 	source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCE_FILES})

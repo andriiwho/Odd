@@ -13,5 +13,7 @@ namespace Odd
 		virtual void BeginRecording() override;
         virtual void EndRecording() override;
         virtual void Submit(RHICommandQueue& commandQueue) override;
+
+		virtual void CMDTransitionResource(RHIResource* resource, const RHIResourceTransitionInfo& transitionInfo) override;
 	};
 }
